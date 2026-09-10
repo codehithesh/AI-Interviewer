@@ -5,14 +5,14 @@
 // DOM toggles inside this one document — nothing about a state change is written
 // to the URL, and there is no router and no second page.
 //
-//   Ready   the initial view, and where [Restart] returns to. A readiness card
-//           instead of a transcript; the composer is inert.
+//   Ready   the initial view, and where a session that has been cleared waits. A
+//           readiness card instead of a transcript; the composer is inert.
 //   Live    reached by pressing [Start interview] — and by nothing else. This is
 //           the only thing that begins an interview, which also makes it the user
 //           gesture the browser's autoplay policy requires before speech may start.
 //   Done    the Live layout with the session finished: composer and [+] disabled,
-//           the evaluation as the last transcript item, the rail's button becomes
-//           [Restart]. Not a third screen.
+//           the evaluation as the last transcript item, the rail's button back to
+//           [Start interview]. Not a third screen.
 //
 // The loop is deliberately small, and state.busy is the single gate on it:
 //
@@ -33,7 +33,7 @@
 
 'use strict';
 
-// Bumped by [Start interview] and by [Restart]. A reply that arrives after the
+// Bumped by [Start interview]. A reply that arrives after the
 // session it belongs to has been ended or replaced is dropped instead of landing in
 // the wrong interview — which is what makes it safe to leave [END] live while a
 // request is still in the air.
@@ -86,7 +86,7 @@ function retryRow(action) {
     // A finished session keeps its transcript, so an old error turn can still be on
     // screen. Say why nothing happens rather than looking broken.
     if (retry === requestInterviewerTurn && state.view !== 'live') {
-      setStatus('This interview has ended — press Restart to run another', 'warn');
+      setStatus('This interview has ended — press Start interview to run another', 'warn');
       return;
     }
     retry();
@@ -319,10 +319,11 @@ function stopTimer() {
 // toasts now, and they are posted HERE rather than in updateControls(): that runs on
 // every activity change, so a screen state that merely persisted would re-post its
 // own message for as long as it lasted. A transition is what a click produces —
-// [Restart] and [END] — so a transition is what these belong to. Boot sets 'ready'
-// over the 'ready' state.js already holds, which the guard below makes a no-op: the
-// readiness card explains itself, and a toast repeating it on load would be noise.
-// The live activity state is not lost — the §8.3 status line carries it continuously.
+// [Start interview] and [END] — so a transition is what these belong to. Boot sets
+// 'ready' over the 'ready' state.js already holds, which the guard below makes a
+// no-op: the readiness card explains itself, and a toast repeating it on load would
+// be noise. The live activity state is not lost — the §8.3 status line carries it
+// continuously.
 function setView(next) {
   const changed = state.view !== next;
   state.view = next;
@@ -330,7 +331,7 @@ function setView(next) {
   updateControls();
   if (!changed) return;
   if (next === 'ready') setStatus('Ready — press Start interview');
-  else if (next === 'done') setStatus('Interview finished — restart or export it');
+  else if (next === 'done') setStatus('Interview finished — export it, or start a new one');
 }
 
 // ============================================================
@@ -416,8 +417,9 @@ function endInterview(reason) {
   // §11: the evaluation runs once, when the interview ends, over the whole
   // transcript — and only when there is an answer to evaluate. "Once" is enforced
   // inside js/evaluation.js as well, so a second [END] or a stray timer tick cannot
-  // buy a second call. `state.busy` is set by that function, and it is what stops
-  // [Restart] from being pressed while a reviewer has the transcript in hand.
+  // buy a second call. The Done button stays live throughout anyway — a hanging
+  // provider must not strand the user — so it is the session token, not `state.busy`,
+  // that keeps a result for a session the user has since replaced off the screen.
   if (state.answers.length && typeof runEvaluation === 'function') runEvaluation();
 }
 
@@ -427,8 +429,10 @@ function endReasonText(reason) {
     : 'you ended it';
 }
 
-// [Restart] — clear the session and return to Ready WITHOUT touching the saved
-// configuration. Every piece of session state is reset here and nowhere else.
+// resetSession() — clear the session and return to Ready WITHOUT touching the saved
+// configuration. Every piece of session state is reset here and nowhere else. It is
+// reached from [Start interview] on the Done screen, which is the only way back to a
+// new interview now that there is no separate [Restart].
 function resetSession() {
   stopTimer();
   if (typeof stopTTS === 'function') stopTTS();
@@ -469,8 +473,16 @@ function resetSession() {
   renderReadiness();
 }
 
-function goToReady() {
+// [Start interview] on the Done screen. The button carries one label and one
+// promise, so the finished session is cleared inside the same press rather than
+// behind a separate [Restart] — the reset and the start are one action to the user.
+// resetSession() leaves the view on Ready, which is what startInterview() requires,
+// so the pair composes without startInterview() needing a Done case of its own. If
+// startInterview() then refuses (no API key), it has already said so in plain
+// language and the user is simply left on Ready with the readiness card.
+function startNewInterview() {
   resetSession();
+  startInterview();
 }
 
 // ============================================================
@@ -539,8 +551,9 @@ async function requestInterviewerTurn() {
     }
   }
 
-  // [END], the timer, the question cap or [Restart] may all have landed while the
-  // request was in the air. The turn is dropped rather than shown in a dead session.
+  // [END], the timer, the question cap or a new [Start interview] may all have landed
+  // while the request was in the air. The turn is dropped rather than shown in a dead
+  // session.
   if (token !== sessionId || state.view !== 'live') return;
 
   applyInterviewerReply(reply && reply.text);
@@ -608,8 +621,8 @@ function awaitSpokenTurn() {
 }
 
 // The session token, so js/evaluation.js can tell whether the interview it was run
-// for is still the one on screen. Reading it cannot change it — only [Start
-// interview] and [Restart] bump it.
+// for is still the one on screen. Reading it cannot change it — only startInterview()
+// and resetSession() bump it.
 function getInterviewSessionId() { return sessionId; }
 
 // Every interviewer message is spoken as it arrives unless auto-speak is off. The
@@ -654,8 +667,8 @@ function sendAnswer() {
 function wireInterview() {
   els.btnSend.addEventListener('click', sendAnswer);
   els.btnPrimary.addEventListener('click', () => {
-    if (state.view === 'ready') startInterview();
-    else if (state.view === 'live') endInterview('end');
-    else goToReady();
+    if (state.view === 'live') endInterview('end');
+    else if (state.view === 'done') startNewInterview();
+    else startInterview();
   });
 }

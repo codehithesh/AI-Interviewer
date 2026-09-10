@@ -80,7 +80,7 @@ function updateControls() {
   // good (set once by initSTT), so only touch it when recognition exists.
   if (sttSupported()) els.btnMic.disabled = inert || !live;
 
-  // [Cam] belongs to the rail, next to [Start interview] / [END] / [Restart]: it is
+  // [Cam] belongs to the rail, next to [Start interview] / [END]: it is
   // the one control that stays live on every screen state, including Ready and Done,
   // because the camera is a local self-view and not part of the interview. When this
   // browser has no getUserMedia at all the button is disabled for good (set once by
@@ -88,18 +88,23 @@ function updateControls() {
   if (cameraSupported()) els.btnCam.disabled = false;
 
   // ---------- the rail's action button ----------
+  // TWO labels, not three: [Start interview] whenever a session can be begun — on
+  // Ready, and again on Done, where it clears the finished session and starts the
+  // next one in the same press — and [END] while the interview is live. There is no
+  // separate [Restart] to press first: the button either starts or ends, always.
+  //
   // [Start interview] is guarded against a double press, but [END] is NOT disabled
   // while a request is in the air: §4.2 and §10.4 both say it ends the interview
   // immediately, and a slow or hanging provider must never leave the user with no
   // way out of a live session. A reply that lands after the end is dropped in
-  // js/interview.js.
+  // js/interview.js. Done deliberately keeps its button live for the same reason —
+  // a hanging evaluation must not strand the user on a finished session — and the
+  // session token is what makes starting again mid-evaluation safe.
   els.btnPrimary.disabled = state.busy && state.view === 'ready';
-  els.btnPrimary.textContent = state.view === 'ready' ? 'Start interview'
-    : state.view === 'done' ? 'Restart'
-    : 'END';
-  els.btnPrimary.title = state.view === 'ready' ? 'Start the interview'
-    : state.view === 'done' ? 'Clear this session and return to the start'
-    : 'End the interview and get an evaluation';
+  els.btnPrimary.textContent = state.view === 'live' ? 'END' : 'Start interview';
+  els.btnPrimary.title = state.view === 'live' ? 'End the interview and get an evaluation'
+    : state.view === 'done' ? 'Start a new interview — this finished session is cleared'
+    : 'Start the interview';
   els.btnPrimary.classList.toggle('danger', state.view === 'live');
 
   // ---------- export ----------

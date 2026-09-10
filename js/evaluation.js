@@ -17,7 +17,7 @@
 //     string "82/100", becomes an integer in 0–100; a missing field is omitted from
 //     the card rather than rendered as `undefined`.
 //   · It never locks the app. A failed evaluation is an error bubble with [Try
-//     again] in it; export and [Restart] stay available throughout.
+//     again] in it; export and [Start interview] stay available throughout.
 //
 // The prompt lives here rather than in js/interviewer.js because it is a different
 // job with a different contract: the interviewer must never score the candidate
@@ -274,9 +274,10 @@ function evaluationFailed() {
 }
 
 // The session token, read through js/interview.js rather than reached for directly.
-// It is bumped by [Start interview] and [Restart] and by nothing else, so comparing
-// it before and after an await is what tells this module whether the interview the
-// evaluation was run for is still the one on screen.
+// It is bumped by the two ways into a new session — startInterview() and
+// resetSession() — and by nothing else, so comparing it before and after an await is
+// what tells this module whether the interview the evaluation was run for is still
+// the one on screen.
 function currentSessionToken() {
   return typeof getInterviewSessionId === 'function' ? getInterviewSessionId() : -1;
 }
@@ -351,7 +352,7 @@ function finishEvaluation(loader, result, error, prov) {
     state.evaluation = { ok: true, provider: prov.name, model: prov.model, result };
     els.transcript.appendChild(renderEvaluationCard(result));
     scrollBottom(els.transcript);
-    setStatus('Interview evaluated — you can export it or restart', 'success');
+    setStatus('Interview evaluated — you can export it or start a new interview', 'success');
   } else {
     const message = error || 'The evaluation came back empty, so there is no score to show.';
     state.evaluation = { ok: false, error: message };

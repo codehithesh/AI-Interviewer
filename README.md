@@ -43,7 +43,8 @@ and it runs.
    the question cap is reached. The evaluation then runs once and appears as the last
    item in the transcript.
 6. **Export** the session as JSON or Markdown at any time — a live session can be
-   saved too. `[Restart]` clears the session and keeps your settings.
+   saved too. `[Start interview]` comes back on the Done screen and begins a new
+   interview, clearing the finished one and keeping your settings.
 
 Settings always edit a draft: nothing is stored until you press **Save**, and closing
 without saving throws the draft away.

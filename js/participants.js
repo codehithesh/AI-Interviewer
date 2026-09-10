@@ -89,8 +89,8 @@ function stopStreamTracks(stream) {
 }
 
 // Leaving the camera on after the interview is a light the user did not ask to
-// keep on, so §10.4 calls this on end, [Restart] and [Cam] off alike. Safe to call
-// when nothing is running.
+// keep on, so §10.4 calls this on end, on a new [Start interview] and on [Cam] off
+// alike. Safe to call when nothing is running.
 function stopCamera() {
   cameraWanted = false;
   const stream = state.stream;

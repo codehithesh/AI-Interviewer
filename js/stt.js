@@ -156,9 +156,10 @@ function stopListening() {
 
 // End the recording and throw away everything the recogniser still has in flight.
 // Used by the paths that end dictation because the answer has already been taken —
-// sending it, the interview ending, [Restart] — where a late final result would
-// otherwise repaint a composer that has moved on. state.recBase is cleared with the
-// rest: the recording is over, and the next one starts from whatever is there then.
+// sending it, the interview ending, a new [Start interview] — where a late final
+// result would otherwise repaint a composer that has moved on. state.recBase is
+// cleared with the rest: the recording is over, and the next one starts from whatever
+// is there then.
 function discardDictation() {
   if (!recognition || (!state.listening && !wantListening)) return;
   discarding = true;

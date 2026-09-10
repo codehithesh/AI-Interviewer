@@ -11,6 +11,7 @@
   --user-bubble-text: #ffffff;
   --ai-bubble: #202020;
   --error: #f85149;
+  --error-hover: #d63a31;
   --success: #2ea043;
   --record: #d93025;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -30,6 +31,7 @@
   --user-bubble-text: #ffffff;
   --ai-bubble: #f6f8fa;
   --error: #cf222e;
+  --error-hover: #a40e26;
   --success: #1a7f37;
   --record: #cf222e;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
@@ -119,9 +121,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
    currentColor through its mask) changes with the label rather than alongside it. */
 .btn.icon-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 /* [END] — the one destructive action on the screen. Coloured by intent, but it
-   also carries its own label, so nothing here relies on colour alone. */
+   also carries its own label, so nothing here relies on colour alone.
+   It is worn ALONGSIDE `.primary`: js/composer.js toggles `danger` on for the live
+   screen and leaves `primary` where it was. That pairing is why the rules below are
+   spelled out twice. `.btn.primary:hover` sets a BACKGROUND at a higher specificity
+   than `.btn.danger` does, so on hover it repainted [END] green while the red border
+   from the non-hover `.btn.danger` survived — a red-outlined green button. A hover
+   state has to set both properties, and outrank `.btn.primary:hover`, to stay whole.
+   The hover also darkens the way `.btn.primary`'s does, instead of the brightness()
+   filter that was here: that lightened the white label as much as the fill, so the
+   two buttons did not even read as the same interaction. */
 .btn.danger { background: var(--error); border-color: var(--error); color: #fff; font-weight: 500; }
-.btn.danger:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.primary.danger { background: var(--error); border-color: var(--error); }
+.btn.danger:hover:not(:disabled),
+.btn.primary.danger:hover:not(:disabled) { background: var(--error-hover); border-color: var(--error-hover); }
 
 /* ---------- icon glyphs: single-color SVG files tinted via mask ----------
    The glyphs are inlined as data: URIs on purpose. Unlike background-image,

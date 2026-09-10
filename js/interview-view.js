@@ -70,8 +70,10 @@ const INTERVIEW_VIEW_HTML = `
 
       </div>
 
-      <!-- Ready → [Start interview]; Live → [END]; Done → [Restart]. One button
-           with three labels: it is always the thing that moves the session on.
+      <!-- Ready → [Start interview]; Live → [END]; Done → [Start interview] again,
+           which clears the finished session and starts the next one in one press.
+           Two labels on one button, and it is always the thing that moves the
+           session on — there is no separate [Restart] to find first.
            [Cam] sits beside it rather than in the composer because it is not part
            of the interview at all: the self-view is local, so it stays live on all
            three screens (see js/composer.js). -->
