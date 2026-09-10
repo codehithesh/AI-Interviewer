@@ -42,6 +42,7 @@ async function init() {
   initSTT();
   wireComposer();
   wireInterview();
+  initEvaluation();
   wireMarkdown();
   wireExport();
   wireSettings();

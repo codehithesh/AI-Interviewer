@@ -68,25 +68,60 @@ function hasCodeFence(text) {
 // same context, which is exactly what makes "fix it in Settings and carry on" work
 // after a quota refusal. The button re-checks the guard through
 // requestInterviewerTurn(), so a double click cannot fire two requests.
-function retryRow() {
+//
+// The action is a parameter because a second kind of turn carries the same button:
+// a failed evaluation (js/evaluation.js) retries the evaluation, not the next
+// question, and on the Done screen that is the only retryable thing there is — so
+// the "this interview has ended" guard only applies to the interviewer path.
+function retryRow(action) {
+  const retry = action || requestInterviewerTurn;
   const row = document.createElement('div');
   row.className = 'bubble-actions';
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'btn compact';
   btn.textContent = 'Try again';
-  btn.title = 'Ask the interviewer again — your answers so far are kept';
+  btn.title = 'Ask again — nothing said so far is lost';
   btn.addEventListener('click', () => {
     // A finished session keeps its transcript, so an old error turn can still be on
     // screen. Say why nothing happens rather than looking broken.
-    if (state.view !== 'live') {
+    if (retry === requestInterviewerTurn && state.view !== 'live') {
       setStatus('This interview has ended — press Restart to run another', 'warn');
       return;
     }
-    requestInterviewerTurn();
+    retry();
   });
   row.appendChild(btn);
   return row;
+}
+
+// The body of a bubble, shared by every module that renders a turn so the two
+// security rules below cannot be applied in one place and forgotten in another:
+// a model reply is the only thing that goes through the markdown parser, and it is
+// that parser (js/markdown.js) which escapes before it writes a tag. Everything
+// else — a typed answer, a notice, a provider error — is textContent, because
+// textContent cannot become markup. A candidate answer is the one exception: when
+// it carries a fenced snippet the fence has to be laid out, so it is rendered as
+// markdown too — but only because hasCodeFence() proved there is a fence in it.
+function bubbleBodyFor(turn) {
+  const body = document.createElement('div');
+  body.className = 'bubble-body';
+  const md = typeof renderMarkdownInto === 'function';
+  if (turn.role === 'ai' && turn.kind === 'question' && md) {
+    renderMarkdownInto(body, turn.text);          // the model writes markdown
+  } else if (turn.role === 'user' && hasCodeFence(turn.text) && md) {
+    renderMarkdownInto(body, turn.text);          // prose + a fenced snippet
+  } else {
+    body.textContent = turn.text;                 // textContent: never markup
+  }
+  return body;
+}
+
+// One AI error bubble, wherever it came from: a failed question request here, a
+// failed evaluation in js/evaluation.js. Shared for the same reason as the body
+// above — one place decides what an error turn looks like.
+function addErrorBubble(message, retryAction) {
+  return addTurn({ role: 'ai', kind: 'error', text: message, retry: true, retryAction });
 }
 
 function appendBubble(turn) {
@@ -106,18 +141,10 @@ function appendBubble(turn) {
   }
   bubble.appendChild(head);
 
-  const body = document.createElement('div');
-  body.className = 'bubble-body';
-  if (turn.role === 'ai' && turn.kind === 'question' && typeof renderMarkdownInto === 'function') {
-    renderMarkdownInto(body, turn.text);          // the model writes markdown
-  } else if (turn.role === 'user' && hasCodeFence(turn.text) && typeof renderMarkdownInto === 'function') {
-    renderMarkdownInto(body, turn.text);          // prose + a fenced snippet
-  } else {
-    body.textContent = turn.text;                 // textContent: never markup
-  }
+  const body = bubbleBodyFor(turn);
   bubble.appendChild(body);
 
-  if (turn.retry) bubble.appendChild(retryRow());
+  if (turn.retry) bubble.appendChild(retryRow(turn.retryAction));
 
   li.appendChild(bubble);
   els.transcript.appendChild(li);
@@ -387,7 +414,13 @@ function endInterview(reason) {
   const elapsed = formatClock(elapsedSeconds());
   addNotice(`Interview finished after ${elapsed} (${endReasonText(state.endedReason)}). `
     + (state.answers.length ? '' : 'No answers were given, so no evaluation was produced.'));
-  // Phase 5 runs the evaluation here, once, when answers exist.
+
+  // §11: the evaluation runs once, when the interview ends, over the whole
+  // transcript — and only when there is an answer to evaluate. "Once" is enforced
+  // inside js/evaluation.js as well, so a second [END] or a stray timer tick cannot
+  // buy a second call. `state.busy` is set by that function, and it is what stops
+  // [Restart] from being pressed while a reviewer has the transcript in hand.
+  if (state.answers.length && typeof runEvaluation === 'function') runEvaluation();
 }
 
 function endReasonText(reason) {
@@ -451,7 +484,7 @@ function goToReady() {
 // already in the history — only the request failed.
 function reportTurnError(message, opts) {
   const o = opts || {};
-  addTurn({ role: 'ai', kind: 'error', text: message, retry: !!o.retry });
+  addErrorBubble(message);
   setStatus(message, o.sticky ? 'error' : 'warn');
 }
 
@@ -477,6 +510,12 @@ async function requestInterviewerTurn() {
     );
     return;
   }
+
+  // A turn cannot be requested past the cap, however the request got here (an
+  // answer, Enter, [Try again]). The cap normally ends the interview first, so this
+  // is the belt to that brace — it also covers the moment between the last question
+  // being asked and the cap being applied, when the composer is briefly answerable.
+  if (state.config.questions && state.questionNumber >= state.config.questions) return;
 
   // One voice at a time: an utterance in progress is cancelled before the next
   // request goes out (§8.1).
@@ -534,10 +573,46 @@ function applyInterviewerReply(raw) {
 
   speakInterviewer(parsed.question);
 
-  // Phase 5 ends the interview here when state.config.questions is reached
-  // (endedReason 'question_cap'); the client owns that count by design (§10.4).
+  // The question cap is counted HERE, by the client, and not by asking the model
+  // whether it has finished (§10.4). This runs whatever the model claimed — a model
+  // that says "that was my last question" and then asks a sixth one is capped, and
+  // so is one that forgets to declare itself done. The wait is for the candidate to
+  // HEAR the last question: ending the instant it arrived would tear the screen away
+  // mid-sentence and cut off speech that was already queued.
+  if (state.config.questions && state.questionNumber >= state.config.questions) {
+    awaitSpokenTurn();
+  }
   return true;
 }
+
+// Requests run back to back to back on their own: the reply to an answer IS the next
+// question, so with no cap there is nothing to wait for. The cap is the one place
+// where the client has to wait for the user rather than for the model, and the wait
+// is real — the composer unlocks the moment TTS stops, so ending the interview the
+// instant the last question *arrived* would tear the screen away mid-sentence and
+// replace speech the candidate never heard with an evaluation.
+//
+// So the cap fires once the last question has actually been spoken, with a hard
+// deadline as the backstop: the engine can be missing, muted, paused, or wedged, and
+// a cap that never fires would leave the interview unable to end itself.
+const CAP_SPEECH_GRACE_MS = 15000;
+const CAP_POLL_MS = 200;
+
+function awaitSpokenTurn() {
+  const token = sessionId;
+  const deadline = Date.now() + CAP_SPEECH_GRACE_MS;
+  const check = () => {
+    if (token !== sessionId || state.view !== 'live') return;   // ended, restarted or replaced
+    if (!state.speaking || Date.now() >= deadline) { endInterview('question_cap'); return; }
+    setTimeout(check, CAP_POLL_MS);
+  };
+  setTimeout(check, CAP_POLL_MS);
+}
+
+// The session token, so js/evaluation.js can tell whether the interview it was run
+// for is still the one on screen. Reading it cannot change it — only [Start
+// interview] and [Restart] bump it.
+function getInterviewSessionId() { return sessionId; }
 
 // Every interviewer message is spoken as it arrives unless auto-speak is off. The
 // words are the markdown-aware reading path, so markers are not read out (§8.1).

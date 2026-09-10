@@ -1,111 +1,117 @@
-# Privacy Policy — Reaction Learner
+# Privacy Policy — AI Interviewer
 
-**Last updated:** <!-- set the date you publish this -->
+**Last updated:** 2025-09-11
 
-Reaction Learner is a Chrome extension that helps you study a text by reacting to
-it from memory and having an AI evaluate your understanding. This policy explains
-exactly what happens to your data. It is short because the extension has no
-backend: there is no account system, no analytics, and no server of ours
-anywhere.
+AI Interviewer is a practice-interview app: you configure an interview, an AI
+interviews you by voice, and you get an evaluation at the end. This policy explains
+exactly what happens to your data. It is short because there is no backend — no
+account system, no analytics, no server of ours anywhere. It is a static page you
+load in your own browser.
 
 ## Summary
 
-- Nothing is sent to us. We operate no servers and receive no data.
-- Your source text, reactions and evaluations live in the tab's memory and are
-  gone when you close it.
-- Your API keys are stored only in your own browser, and are sent only to the AI
-  provider you chose. In the extension that is a storage area private to it; in a
-  plain browser tab it is the browser's `localStorage` for that page's origin.
-- Two things leave your machine, and only when you ask for them: a request to
-  your chosen AI provider when you run an evaluation, and — if you use voice
-  input — your microphone audio to Google for transcription.
+- **Nothing is sent to us.** We operate no servers and receive no data.
+- **There is no transcript storage.** What you say lives in the tab's memory and is
+  gone when you close it; export is the only way to keep a session.
+- **Your API keys stay in your own browser** and are sent only to the AI provider you
+  chose.
+- **Your webcam video never leaves the browser.**
+- **Your microphone audio is sent to Google for transcription** when you use voice
+  input, by Chrome's own speech recogniser. That is the one place your audio leaves
+  the machine.
+- **What the AI sees** is what you send it: your answers, and the code you attach.
 
-## What the extension handles
+## What the app handles
 
 ### API keys
 
-Reaction Learner is "bring your own key": you paste an API key for an AI provider
-(OpenAI, Anthropic, Google, DeepSeek, Moonshot or Mistral). A key is:
+AI Interviewer is "bring your own key". You paste an API key for a provider (OpenAI,
+Anthropic, Google, DeepSeek, Moonshot or Mistral). A key is:
 
-- **read** from the Settings field when you run an evaluation;
-- **stored** only when you press Save, so you enter a key once instead of on every
-  visit. In the extension that is `chrome.storage.local` — this extension's own
-  private storage area, which websites and other extensions cannot read. In a
-  plain browser tab it is the browser's `localStorage` for that page's origin,
-  which any page on the same origin can read; the extension is the more private
-  option for that reason. If you never press Save, the key is never written
-  anywhere;
-- **sent** only to that provider's API endpoint, as the `Authorization` header of
-  the request you asked for. It is never sent to us or to any other party.
+- **read** from the Settings field when a request is made;
+- **stored** only when you press **Save**, so you enter it once instead of on every
+  visit. It goes to your browser's `localStorage` for this page's origin;
+- **sent** only to that provider's own API endpoint, as the `Authorization` header of
+  the request you asked for. It is never sent to us or to any other party;
+- **never logged to the console, put in the URL, or rendered into the page** outside
+  the password field that holds it.
 
-Pressing **Forget saved keys** deletes every stored key from your browser, in
-either build. Uninstalling the extension removes the extension's storage, and
-clearing site data removes the browser-tab copy.
+Pressing **Forget saved keys** deletes every stored key from your browser and leaves
+your other preferences standing. Clearing site data does the same thing more
+thoroughly.
 
-### Source text and reactions
+> **Be aware:** `localStorage` is scoped to an *origin*, not to a project. If this app
+> is served from GitHub Pages at `<your-user>.github.io`, then **any other project
+> under that same `<your-user>.github.io` origin can read what is stored here**,
+> including a saved API key. That is a property of the web, not a choice this app
+> makes, and the mitigation is the **Forget saved keys** button — or simply not
+> pressing Save.
 
-Source text is loaded in one of three ways, all under your control:
+### The interview itself
 
-- you paste it yourself, or
-- you type an address into the **Enter URL** tab, which opens that page in a
-  background tab, reads its readable text, and closes the tab again. This needs
-  your approval for that one site — Chrome asks the first time you load it, and
-  you can revoke it at any time — or
-- you click the extension's toolbar icon on a page, which reads that page's
-  readable text using Chrome's `activeTab` permission. This happens only at the
-  moment you click; the extension has no standing access to your browsing.
+Your answers are sent to the AI provider whose key you entered, because that is what
+an AI interview is. Along with each answer the app sends the running conversation —
+the interviewer's questions and your earlier answers — so the interviewer has context.
+Only `message.content` from the provider's reply is read; any reasoning or
+chain-of-thought field is discarded and never shown, logged or spoken.
 
-In every case the text is taken from the page in your own browser and is never
-sent to us — we operate no server that could receive it.
+Your **transcript, answers and evaluation are held in memory only**. They are never
+written to `localStorage`, never uploaded anywhere else, and are gone when you close
+the tab. **Export** is the only way to keep a session, and an exported file is written
+locally by your browser — nothing is uploaded to produce it.
 
-Source text, the paragraph you marked, your written reactions and the AI's
-evaluations are held **in memory only**, in the running page. They are not stored
-anywhere and not transmitted anywhere, except that:
+### Camera
 
-- when you press **Send**, the portion of the source text up to your marker is
-  sent to your chosen AI provider as context for the evaluation, together with
-  your reaction; and
-- when you use **Export**, a JSON or Markdown file is generated in your browser
-  and saved wherever your browser saves downloads. That file contains the source
-  text, your reactions and the evaluations. Where it goes afterwards is up to you.
+`[Cam]` starts a **local self-view** with `getUserMedia({video: true, audio: false})`.
+No audio track is requested, so the camera can never quietly become a second
+microphone.
 
-### Voice input
+**The video never leaves your browser.** It is not recorded, not stored, not uploaded,
+and never sent to any AI provider. Switching `[Cam]` off — or ending or restarting the
+interview — stops the camera tracks outright.
 
-Voice input uses the browser's built-in `SpeechRecognition` API. No account and
-no API key are involved, and the extension stores nothing.
+The app does not enumerate your devices or read device labels before you grant
+permission.
 
-Be aware that in Chrome this API is a **server-side** recogniser: your microphone
-audio is streamed to Google to be transcribed. Dictation does not work offline.
-This is Chrome's behaviour, not something the extension controls, and it is the
-reason the extension asks for microphone permission. If you would rather not send
-audio anywhere, type your reaction instead — everything else in the extension
-stays on your machine. Text-to-speech (Read aloud) is fully local and uses the
-voices already installed on your computer.
+### Microphone
 
-## What we never do
+`[Mic]` uses the browser's built-in speech recognition
+(`window.SpeechRecognition || window.webkitSpeechRecognition`). No third-party speech
+service is involved and no key is needed for it.
 
-- We never collect, receive or have access to your data.
-- We do not sell or transfer your data to third parties.
-- We do not use your data for advertising, profiling, or creditworthiness.
-- We do not use your data for any purpose unrelated to the extension's single
-  purpose of evaluating your reactions to a text you loaded.
-- No human reads your data, because we never receive it.
+**This is the one place your audio leaves the machine.** In Chrome, speech recognition
+is a *server-side* recogniser: **microphone audio is streamed to Google to be
+transcribed**, and dictation does not work offline. That is the browser's behaviour,
+not a decision this app makes, and it is the reason the app cannot promise that voice
+input stays local.
 
-This use of data complies with the Chrome Web Store User Data Policy, including
-the Limited Use requirements.
+If you would rather nothing recorded your voice, type your answers instead — the
+interview is fully usable without the microphone, and on browsers with no speech
+recognition the mic button is disabled and the interview proceeds as type-only.
 
-## Third parties
+Read-aloud (text-to-speech) really is fully local: it uses your operating system's
+voices through `speechSynthesis` and sends nothing anywhere. Interviewer messages are
+read aloud locally only.
 
-Your data reaches a third party only through an action you take:
+### Code you attach
+
+The `[+]` code editor is a plain textarea. Code you insert becomes part of your
+answer, and is therefore sent to your chosen AI provider along with the rest of that
+answer when you send it. It is not stored anywhere else.
+
+## What leaves your machine
 
 | When | What is sent | To |
 | --- | --- | --- |
-| You run an evaluation | The source text up to your marker, and your reaction | The AI provider whose key you entered |
-| You use voice input | Microphone audio | Google (via Chrome's `SpeechRecognition`) |
+| You start or answer an interview | Your answers, attached code, and the conversation so far | The AI provider whose key you entered |
+| The interview ends | The full transcript | The same provider, for the evaluation |
+| You use `[Mic]` | Microphone audio | Google (via Chrome's `SpeechRecognition`) |
+| You press `[Cam]` | Nothing | Nobody — the self-view is local |
+| You read a reply aloud | Nothing | Nobody — `speechSynthesis` runs locally |
 | You export a session | Nothing | Nobody — the file is written locally |
 
-Each provider handles that data under its own privacy policy. The relevant ones
-are: [OpenAI](https://openai.com/policies/privacy-policy),
+Each provider handles that data under its own privacy policy. The relevant ones are:
+[OpenAI](https://openai.com/policies/privacy-policy),
 [Anthropic](https://www.anthropic.com/legal/privacy),
 [Google](https://policies.google.com/privacy),
 [DeepSeek](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html),
@@ -114,60 +120,37 @@ are: [OpenAI](https://openai.com/policies/privacy-policy),
 
 ## Retention and deletion
 
-We retain nothing. Source text, your marked position and your reactions live in
-the page and disappear when you close the tab.
+We retain nothing, because we receive nothing.
 
-Saved settings — your API keys, chosen provider, chosen models and appearance —
-persist until you erase them, so you enter a key once rather than on every visit.
-They are removed by **Forget saved keys** in Settings, which erases the keys and
-leaves your other preferences standing. Uninstalling the extension removes
-everything it stored; clearing site data does the same for the browser-tab build.
-Exported files are yours to delete.
+In the page: the transcript, your answers, the evaluation and any live camera stream
+exist in memory for as long as the tab is open, and are gone when it closes. Nothing
+about a session is written to storage, so there is nothing to delete.
 
-In the extension those settings live in `chrome.storage.local`, a storage area
-private to the extension. In a plain browser tab (the hosted page, or
-`index.html` opened from disk) they live in the browser's `localStorage` for that
-origin — which means any other page served from the same origin can read them.
-That is the reason the extension exists as the more private option.
+In your browser's storage, only your **preferences** persist, so you are not
+re-entering a key on every visit:
 
-## Permissions
+- API keys, one per provider;
+- the chosen provider and the chosen model per provider;
+- appearance (system / light / dark), the interview configuration (role, type,
+  difficulty, duration, question cap, seed prompt), and the speech preferences (voice,
+  rate, auto-speak).
 
-| Permission | Why |
-| --- | --- |
-| `activeTab` | Read the current page's text, only after you click the toolbar icon |
-| `scripting` | Extract that page's readable text at the moment you click, and read a page you loaded through **Enter URL** |
-| `storage` | Save your API keys, chosen provider, model and appearance, locally |
-| Host access to the six AI provider endpoints | Send your evaluation request to the provider you selected |
-| **Optional** host access to sites | Only if you use **Enter URL**, and only for the sites you approve in Chrome's prompt |
+**Forget saved keys** in Settings erases the keys and leaves the preferences standing.
+Clearing your browser's site data removes all of it.
 
-The one permission that could grant access to websites is declared **optional**.
-It is not granted when you install or update the extension. It is requested only
-when you press **Load text** in the **Enter URL** tab, one origin at a time, and
-each grant can be revoked individually in `chrome://extensions` without
-uninstalling. If you never use **Enter URL**, the extension never holds access to
-any site beyond the one you clicked on with the toolbar icon.
-
-When you do approve a site, what happens is narrow and inspectable:
-`background.js` opens the exact address you typed, runs one function that reads
-`article`/`main`/`body` text, and closes the tab again. Nothing is fetched unless
-you press **Load text**, and there is no background scanning and no history
-access.
-
-The extension executes no remote code — every line of it ships inside the
-package.
+Exported files are yours, on your own disk, to delete.
 
 ## Children
 
-The extension is not directed at children and does not knowingly collect
-information from anyone.
+This app is not directed at children and does not knowingly collect information from
+anyone.
 
 ## Changes
 
-If this policy changes, the updated version will be published at this URL with a
-new "last updated" date. Material changes will also be noted in the extension's
-release notes.
+If this policy changes, the updated version will be published at this URL with a new
+"last updated" date.
 
 ## Contact
 
 Questions or concerns: please open an issue at
-<https://github.com/codehithesh/Reaction-Learner/issues>.
+<https://github.com/codehithesh/AI-Interviewer/issues>.
