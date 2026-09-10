@@ -1,0 +1,483 @@
+:root {
+  --bg: #141414;                /* neutral charcoal — no blue cast */
+  --panel: #1b1b1b;
+  --panel-2: #262626;
+  --border: #3a3a3a;
+  --text: #e8e8e8;
+  --text-dim: #9b9b9b;
+  --accent: #2f9d62;            /* forest */
+  --accent-hover: #23804e;
+  --user-bubble: #1f8a58;
+  --user-bubble-text: #ffffff;
+  --ai-bubble: #202020;
+  --error: #f85149;
+  --success: #2ea043;
+  --record: #d93025;
+  --marker: rgba(47, 157, 98, 0.22);
+  --marker-line: #2f9d62;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --status-h: 26px;             /* bottom reading-position strip; see .reader-toolbar */
+  --read-max: 680px;            /* reading measure — ≈85 chars at 15.5px */
+  --chat-max: 880px;            /* reactions measure — fits the eval grid in 3 columns */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+[data-theme="light"] {
+  --bg: #ffffff;
+  --panel: #f6f8fa;
+  --panel-2: #eaeef2;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-dim: #656d76;
+  --accent: #157347;            /* forest */
+  --accent-hover: #105c38;
+  --user-bubble: #157347;
+  --user-bubble-text: #ffffff;
+  --ai-bubble: #f6f8fa;
+  --error: #cf222e;
+  --success: #1a7f37;
+  --record: #cf222e;
+  --marker: rgba(21, 115, 71, 0.14);
+  --marker-line: #157347;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+button { font: inherit; }
+/* one typeface everywhere — kill browser monospace defaults on form controls */
+input, select, textarea { font-family: var(--font); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hidden { display: none !important; }
+.dim { color: var(--text-dim); font-size: 12px; }
+.spacer { flex: 1; }
+.vsep { width: 1px; height: 18px; background: var(--border); flex: none; }
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ---------- pane header (reader pane’s own top row — no full-width nav bar) ---------- */
+.pane-head {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+  height: 48px; padding: 0 16px; box-sizing: border-box;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 650; font-size: 14px; letter-spacing: 0.01em; white-space: nowrap; }
+
+/* ---------- toast (bottom-left, stacked) ---------- */
+/* Toasts stack instead of replacing one another. A problem message (error or
+   warn) stays until dismissed for the first kind and clears itself for the
+   second — see setStatus in js/dom.js. The stack itself is click-through: only
+   the toasts in it take pointer events, so its empty area never blocks the UI
+   underneath. */
+.toast-stack {
+  position: fixed; left: 16px; bottom: 16px; z-index: 200;
+  width: min(400px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: min(50vh, 380px); overflow-y: auto;
+  pointer-events: none;
+  transition: bottom 0.18s ease;
+}
+.toast {
+  /* flex:none — as a flex item in a column stack these would otherwise shrink
+     and squash their text once the stack hits its max-height, instead of letting
+     the stack scroll */
+  flex: none;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 8px 10px 14px; border-radius: 10px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; line-height: 1.45;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.18s ease;
+  pointer-events: auto;
+}
+.toast-msg { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.toast-close {
+  flex: none; width: 22px; height: 22px; padding: 0; margin-top: -1px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 6px; cursor: pointer;
+  color: inherit; opacity: 0.55; font-size: 12px; line-height: 1;
+}
+.toast-close:hover { opacity: 1; background: var(--border); }
+.toast.error { border-color: var(--error); color: var(--error); }
+.toast.success { border-color: var(--success); color: var(--success); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- buttons ---------- */
+.btn {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  height: 34px; padding: 0 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  box-sizing: border-box;
+}
+.btn:hover:not(:disabled) { background: var(--border); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn.compact { height: 34px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
+.btn.icon { height: 34px; padding: 0 8px; font-size: 13px; }
+/* square icon-only button — label text stays in the tooltip / aria-label */
+.btn.icon-btn { width: 34px; padding: 0; flex: none; }
+
+/* ---------- icon glyphs: single-color SVG files tinted via mask ---------- */
+.ic {
+  display: inline-block; width: 16px; height: 16px; flex: none;
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+          mask: var(--icon) center / contain no-repeat;
+}
+.ic-gear     { --icon: url('icons/gear.svg'); }
+.ic-msg      { --icon: url('icons/message.svg'); }
+.ic-file-add { --icon: url('icons/file-add.svg'); }
+.ic-plus     { --icon: url('icons/plus.svg'); }
+.ic-pen      { --icon: url('icons/pen.svg'); }
+.ic-sun      { --icon: url('icons/sun.svg'); }
+.ic-moon     { --icon: url('icons/moon.svg'); }
+.ic-monitor  { --icon: url('icons/monitor.svg'); }
+.ic-trash    { --icon: url('icons/trash.svg'); }
+.ic-play     { --icon: url('icons/play.svg'); }
+.ic-pause    { --icon: url('icons/pause.svg'); }
+.ic-stop     { --icon: url('icons/stop.svg'); }
+.ic-mic      { --icon: url('icons/mic.svg'); }
+.ic-send     { --icon: url('icons/send.svg'); }
+.ic-eye      { --icon: url('icons/eye.svg'); }
+.ic-eye-off  { --icon: url('icons/eye-off.svg'); }
+.ic-download { --icon: url('icons/download.svg'); }
+/* the mic glyph is a shade small for a 16px box */
+#btn-mic .ic-mic { width: 17px; height: 17px; }
+
+.seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; }
+.seg-btn {
+  flex: 1; height: 34px; padding: 0 6px; background: var(--panel); color: var(--text-dim);
+  border: none; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.seg-btn.active { background: var(--accent); color: #fff; font-weight: 500; }
+.seg-btn:not(.active):hover { background: var(--border); color: var(--text); }
+/* a tab whose backing feature is unavailable in this context (e.g. Enter URL
+   when the page is opened from disk, where cross-origin fetch is impossible) */
+.seg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.seg-btn:disabled:hover { background: var(--panel); color: var(--text-dim); }
+
+label { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-top: 10px; display: block; }
+input[type="password"], input[type="url"], select, textarea {
+  width: 100%; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;
+}
+/* uniform 34px fields; the big source box & reaction box keep natural height */
+input[type="password"], input[type="url"], select { height: 34px; padding: 0 10px; }
+textarea { padding: 8px 10px; line-height: 1.5; resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+.hint { font-size: 11.5px; color: var(--text-dim); }
+.mini-label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+#api-error { font-size: 12px; color: var(--error); min-height: 14px; margin-top: 6px; }
+
+/* ---------- single column: the reader owns the screen; reactions slide over it ---------- */
+.split {
+  flex: 1 1 auto; min-height: 0; overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* reader column */
+.reader-col {
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  background: var(--bg);
+}
+/* bottom status strip — the reading position readout. No controls live in here
+   any more, so it is thin, and it only appears once a paragraph has been marked
+   as read. It is the last row of the reader column, which spans the viewport, so
+   it lands at the bottom of the screen; the floating React button and the toast
+   sit above it, clearing it by --status-h. */
+.reader-toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+  min-height: var(--status-h);
+  padding: 3px 16px; border-top: 1px solid var(--border); background: var(--bg);
+}
+#read-pos { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.speech-bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+  padding: 7px 16px; border-bottom: 1px solid var(--border); background: var(--panel);
+}
+.speech-bar select { width: auto; }
+#voice-select { flex: 1; min-width: 0; }
+#rate-select { width: 88px; }
+.reading {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 18px 26px; background: var(--bg);
+  overscroll-behavior: contain;
+  display: flex; flex-direction: column;
+}
+.reading p.para {
+  font-size: 15.5px; line-height: 1.75; margin: 0 0 14px; padding: 2px 8px;
+  border-radius: 6px; cursor: pointer; color: var(--text);
+  transition: background 0.15s, opacity 0.2s, border-color 0.15s;
+  border-left: 3px solid transparent;
+}
+.reading p.para:hover { background: var(--panel-2); }
+.reading p.para.after { opacity: 0.32; }
+.reading p.para.marker { border-left-color: var(--marker-line); background: var(--marker); }
+.reading p.para.reading-now { background: var(--marker); border-left-color: var(--marker-line); opacity: 1; }
+.empty-state {
+  color: var(--text-dim); text-align: center; padding: 24px 20px;
+  font-size: 13.5px; line-height: 1.7;
+}
+.empty-state b { color: var(--text); }
+/* center the placeholder messages inside their pane */
+.reading > .empty-state, .reactions > .empty-state { margin: auto 0; }
+
+/* reactions sheet: a full-screen overlay over the reader — the same on desktop
+   and mobile. Hidden until the floating React button brings it up, so the text
+   is out of sight while you recall. */
+.reactions-col {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  transform: translateY(100%);
+  visibility: hidden;
+  /* visibility must NOT be transitioned: while it was, the sheet stayed hidden
+     for the whole slide and anything inside it silently refused focus. Closing
+     still waits for the slide-out before it truly disappears. */
+  transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  box-shadow: var(--shadow);
+}
+.reactions-col.open {
+  transform: translateY(0);
+  visibility: visible;
+  transition: transform 0.22s ease, visibility 0s linear 0s;
+}
+.reactions-head {
+  flex: 0 0 auto; height: 48px; padding: 0 16px; box-sizing: border-box;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  overflow: visible; /* lets the export menu escape the header */
+}
+.reactions-head .head-title {
+  font-size: 14px; font-weight: 650; color: var(--text);
+  letter-spacing: 0.01em; white-space: nowrap;
+}
+/* “Recall from memory” marker — the sheet hides the text by design */
+.recall-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--text-dim); font-size: 11.5px; font-weight: 600;
+}
+.recall-badge .ic { width: 14px; height: 14px; }
+/* the sheet is full width now, so the bubbles and composer breathe a little more */
+.composer { padding: 10px 18px 14px; }
+#react-hint { font-size: 12px; }
+
+/* floating React button — the one way into the reactions sheet */
+.reactions-fab {
+  display: inline-flex; align-items: center; gap: 7px;
+  /* sits on the bottom edge; body.has-status lifts it clear of the status strip */
+  position: fixed; right: 16px; bottom: 16px; z-index: 45;
+  transition: bottom 0.18s ease;
+  background: var(--accent); color: #fff; border: none;
+  padding: 11px 16px; border-radius: 999px; cursor: pointer;
+  font-size: 13.5px; font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+.reactions-fab:hover { background: var(--accent-hover); }
+.reactions {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 14px 18px 12px; display: flex; flex-direction: column; gap: 10px;
+  overscroll-behavior: contain;
+}
+
+/* bubbles */
+.bubble { max-width: 100%; padding: 10px 13px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; word-wrap: break-word; }
+.bubble.user { background: var(--user-bubble); color: var(--user-bubble-text); align-self: flex-end; border-top-right-radius: 4px; max-width: 88%; }
+.bubble.ai { background: var(--ai-bubble); border: 1px solid var(--border); color: var(--text); align-self: stretch; border-top-left-radius: 4px; }
+.bubble-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; opacity: 0.8; }
+.bubble.user .bubble-header { opacity: 0.9; }
+.tag { display: inline-block; background: rgba(0,0,0,0.25); padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+.bubble.user .tag { background: rgba(255,255,255,0.2); }
+.dim-row { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; }
+
+.eval-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 6px 0; }
+.eval-cell { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: rgba(0,0,0,0.15); }
+.eval-cell .name { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; }
+.eval-cell .exp { font-size: 12.5px; margin-top: 3px; }
+.score-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-weight: 600; font-size: 11.5px; margin-left: 6px; }
+.score-badge.high { background: rgba(46,160,67,0.25); color: #2ea043; }
+.score-badge.mid { background: rgba(217,119,6,0.25); color: #d97706; }
+.score-badge.low { background: rgba(248,81,73,0.25); color: #f85149; }
+.summary-box { margin-top: 8px; border-left: 3px solid var(--accent); padding: 4px 12px; background: rgba(0,0,0,0.12); border-radius: 0 8px 8px 0; }
+.summary-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); font-weight: 600; margin-bottom: 3px; }
+.loader { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* composer — one row: growing input + mic + send */
+.composer {
+  flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--panel);
+  padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px;
+}
+#react-hint { font-size: 11.5px; }
+.composer-row { display: flex; align-items: flex-end; gap: 8px; }
+#react-text {
+  flex: 1 1 auto; min-width: 0; resize: none; overflow-y: hidden;
+  min-height: 34px; max-height: 140px;
+}
+#react-text.grown { overflow-y: auto; }
+#btn-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
+/* while recording the button widens to show the state next to the mic glyph */
+.rec-label { display: none; font-size: 12.5px; font-weight: 600; }
+#btn-mic.listening { width: auto; padding: 0 12px; }
+#btn-mic.listening .rec-label { display: inline; }
+
+/* header action cluster + dropdown menu (used by the Activity header) */
+.head-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.menu-wrap { position: relative; display: inline-flex; }
+.menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 70;
+  min-width: 150px; padding: 4px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.menu-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; color: var(--text);
+  font-size: 13px; padding: 8px 10px; border-radius: 7px; cursor: pointer;
+}
+.menu-item:hover { background: var(--border); }
+
+/* ---------- modals ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 100;
+}
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: var(--shadow);
+  width: min(600px, 100%); max-height: calc(100vh - 40px);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+/* settings modal gets extra width on desktop (source modal stays compact) */
+#settings-modal .modal { width: min(780px, 100%); }
+/* modal header — fixed nav bar, same as the app panes’ 40px header */
+.modal-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  height: 48px; padding: 0 14px 0 20px; box-sizing: border-box;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.modal-head h3 {
+  font-size: 14px; font-weight: 650; color: var(--text);
+  letter-spacing: 0.01em; white-space: nowrap;
+}
+/* modal content scrolls under the fixed header */
+.modal-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 16px 20px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#settings-modal .modal-body { padding: 16px 24px 22px; }
+.modal-label {
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); margin-top: 10px;
+}
+/* appearance picker: label on the left, System / Light / Dark tabs on the right */
+.appearance-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px 14px; margin-top: 10px;
+}
+.appearance-row .appearance-label { margin-top: 0; }
+.appearance-row .seg {
+  width: auto; flex: 1 1 260px; max-width: 380px;
+  margin-left: auto;
+}
+.appearance-row .seg-btn { font-size: 12px; padding: 0 4px; white-space: nowrap; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+
+/* source modal: the two tab panels. A pane repeats the modal body's own column
+   gap so switching tabs never shifts the surrounding spacing. */
+.source-pane { display: flex; flex-direction: column; gap: 10px; }
+#source-tabs { margin-bottom: 2px; }
+
+/* provider cards — stacked, one after another */
+#provider-list { display: flex; flex-direction: column; gap: 16px; }
+.provider-card {
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+  background: var(--panel-2); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.provider-card:hover { border-color: var(--text-dim); }
+.provider-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.pc-head { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+.pc-radio {
+  width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--text-dim);
+  flex: none; position: relative;
+}
+.provider-card.active .pc-radio { border-color: var(--accent); }
+.provider-card.active .pc-radio::after {
+  content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--accent);
+}
+.pc-name { font-weight: 650; font-size: 14px; }
+.pc-models { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+.forget-row { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+
+/* scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* One layout everywhere: the reactions sheet and the reader behave identically
+   at every width and there is no desktop/mobile divergence left to style. Width
+   changes one thing only — the measure the text is set to; see below. */
+
+/* The bottom status strip lifts the floating React button and the toast clear of
+   it. Until a paragraph is marked as read the strip is hidden, so both fall back
+   to their base rule and sit on the bottom edge — never a gap. */
+body.has-status .reactions-fab { bottom: calc(var(--status-h) + 16px); }
+body.has-status .toast-stack { bottom: calc(var(--status-h) + 16px); }
+
+/* ---------- the reading measure ----------
+   Full-bleed containers give a paragraph a ~2500px line on a wide monitor, and
+   past roughly 90 characters the eye loses its place on the return sweep to the
+   next line. So the text is capped at a measure and centred — while the
+   containers stay viewport-wide, which keeps scrollbars pinned to the window
+   edge, keeps the bars spanning the screen behind the text, and avoids wrapping
+   the paragraphs and bubbles in elements that js/reader.js and js/reactions.js
+   would then have to append into.
+
+   Symmetric padding is what does the work. Past the measure it resolves to
+   (100% - measure) / 2: an even gutter that grows with the leftover space.
+   Below it the calc() goes negative and max() falls back to the element's
+   original padding — so phones keep today's edge-to-edge look and there is no
+   breakpoint to keep in sync. The bars share --read-max with the text, so their
+   contents line up with the column the moment it stops filling the width. */
+.reading { padding-inline: max(26px, calc((100% - var(--read-max)) / 2)); }
+.speech-bar,
+.reader-toolbar { padding-inline: max(16px, calc((100% - var(--read-max)) / 2)); }
+.reactions { padding-inline: max(18px, calc((100% - var(--chat-max)) / 2)); }
+.composer { padding-inline: max(14px, calc((100% - var(--chat-max)) / 2)); }
+
+/* narrow: the settings and source modals go full screen */
+@media (max-width: 1000px) {
+  .modal-overlay { padding: 0; align-items: stretch; }
+  .modal {
+    width: 100%; height: 100%; max-height: none;
+    border-radius: 0; border: none; box-shadow: none;
+  }
+}
+
+/* narrow phones: tighter reading padding */
+@media (max-width: 600px) {
+  .reading { padding: 12px 14px; }
+  .speech-bar { flex-wrap: wrap; }
+  #voice-select { flex: 1 1 140px; }
+}

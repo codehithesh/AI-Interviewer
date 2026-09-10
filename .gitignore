@@ -1,0 +1,8 @@
+.DS_Store
+
+# release artifacts
+# dist/
+# *.zip
+
+# leftover headless-Chrome profile from local testing — never ship this
+.shot-profile/
