@@ -4,11 +4,6 @@
 
 'use strict';
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
 // ---------- API keys ----------
 // A key is pasted, and pastes from web pages, chat apps and password managers
 // routinely carry characters a key can never contain: curly quotes, em dashes,
@@ -30,12 +25,4 @@ function sanitizeKey(raw) {
     .replace(/[\s\u0000-\u001F\u007F]/g, '')  // \s already covers NBSP and friends
     .replace(/[^\u0000-\u00FF]/g, '');
   return { key, removed: s.length - key.length };
-}
-
-function fmtCount(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
-
-function fmtPct(f) { return Math.round(f * 100) + '%'; }
-
-function slug(s) {
-  return (s || 'session').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'session';
 }

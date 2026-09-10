@@ -108,15 +108,20 @@ function modelOptions(p, selected) {
 }
 
 // The provider + key + model currently selected in the Settings modal.
+// The fields are read defensively: the chat is wired before the saved settings
+// have loaded, so a message sent inside that window must report a missing key
+// rather than throw on a provider card that does not exist yet.
 function activeProvider() {
   const cfg = PROVIDER_MAP[state.provider];
+  const keyEl = providerInput(cfg.id);
+  const modelEl = providerModel(cfg.id);
   return {
     name: cfg.id,
     label: cfg.label,
     // sanitized on the way out: this object is the only thing that becomes an
     // Authorization header, so cleaning here covers every path into the field —
     // a paste, a key restored from storage, or a hand-edited entry
-    key: sanitizeKey(providerInput(cfg.id).value).key,
-    model: providerModel(cfg.id).value,
+    key: keyEl ? sanitizeKey(keyEl.value).key : '',
+    model: (modelEl && modelEl.value) || cfg.def || cfg.models[0].v,
   };
 }

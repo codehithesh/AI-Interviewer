@@ -1,21 +1,52 @@
 // ============================================================
-// TEXT-TO-SPEECH — read aloud, paragraph by paragraph (native, no API)
+// TEXT-TO-SPEECH — replies read aloud (native, no API)
 // ============================================================
 // Built entirely on window.speechSynthesis with the OS voices: nothing is
-// uploaded and no speech service is involved. The reading marker and the
-// paragraph highlighting live in js/marker.js; this file only drives the voice
-// and reports progress back to it.
+// uploaded and no speech service is involved. Voice and rate are chosen in the
+// Settings modal (js/settings.js); the words come from the chat (js/chat.js).
 
 'use strict';
 
 const synth = window.speechSynthesis || null;
 
+// Called whenever the speaking state flips, so the composer can re-decide what
+// the user is allowed to do without polling.
+let onSpeakingChange = null;
+
+// Pausing and resuming flip no top-level flag that setSpeaking() watches, so the
+// transport asks for a control refresh explicitly through this.
+function notifyControls() {
+  if (typeof onSpeakingChange === 'function') onSpeakingChange();
+}
+
+function setSpeaking(v) {
+  if (state.speaking === v) return;
+  state.speaking = v;
+  notifyControls();
+}
+
+// Whether this browser can speak at all — without it the transport bar stays hidden.
+function ttsAvailable() { return !!synth; }
+
+// The newest completed reply: what the transport reads, and the reason the bar is
+// on screen at all. Errors are not read aloud, so they are skipped.
+function latestAiReply() {
+  for (let i = state.transcript.length - 1; i >= 0; i -= 1) {
+    const t = state.transcript[i];
+    if (t.role === 'ai' && t.kind === 'text' && t.text) return t;
+  }
+  return null;
+}
+
 // ---------- voices ----------
+// The <select> is rebuilt from the browser's voice list. Chrome fills that list
+// asynchronously, so an empty list at boot is normal — 'voiceschanged' is what
+// eventually makes the saved voice selectable.
 function populateVoices() {
-  if (!synth) return;
+  if (!synth || !els.voiceSelect) return;
   const voices = synth.getVoices();
   if (!voices.length) return;
-  const cur = els.voiceSelect.value;
+  const cur = els.voiceSelect.value || state.speech.voice;
   els.voiceSelect.innerHTML = '';
   const def = document.createElement('option');
   def.value = '';
@@ -27,128 +58,140 @@ function populateVoices() {
     o.textContent = `${v.name} (${v.lang})`;
     els.voiceSelect.appendChild(o);
   }
-  if (cur) els.voiceSelect.value = cur;
+  els.voiceSelect.value = cur;
 }
 
 function activeVoice() {
-  if (!synth) return null;
-  const name = els.voiceSelect.value;
-  if (!name) return null;
-  return synth.getVoices().find((v) => v.name === name) || null;
+  if (!synth || !state.speech.voice) return null;
+  return synth.getVoices().find((v) => v.name === state.speech.voice) || null;
 }
 
-// pause button keeps its icon while the label swaps between Pause / Resume
-function setPauseBtn(label) {
-  const ic = label === 'Resume' ? 'play' : 'pause';
-  els.btnPause.innerHTML = `<span class="ic ic-${ic}" aria-hidden="true"></span>${label}`;
-}
+// ---------- speaking ----------
+// A reply is written for the eye: markers and URLs are not words, and a reader that
+// says "asterisk asterisk" or spells out a link is worse than no reader at all. So
+// spoken text goes through markdownToPlain() (js/markdown.js) first — the same
+// parser the bubble is rendered with, so what is heard matches what is seen.
+function speakReply(text) { speakText(markdownToPlain(text)); }
 
-// ---------- reading ----------
-function readAloudFrom(startP) {
-  if (!synth || !state.paras.length) return;
-  if (startP < 0 || startP >= state.paras.length) {
-    setStatus('Nothing left to read — mark an earlier paragraph to re-read', 'warn');
-    return;
-  }
-  stopTTS();
-  state.tts.active = true;
-  state.tts.paused = false;
-  state.tts.idx = startP;
-  els.btnPause.disabled = false;
-  els.btnStop.disabled = false;
-  setPauseBtn('Pause');
-  setStatus('Reading aloud — native speech, nothing uploaded');
-  renderReadingState();
-  speakNext();
-}
+// speakText() is the literal layer: hand it a string and it is read aloud as written.
+function speakText(text) {
+  if (!synth || !text) return;
+  stopTTS();                     // one reply at a time — never overlap two
 
-function speakNext() {
-  if (!state.tts.active) return;
-  const i = state.tts.idx;
-  if (i >= state.paras.length) {
-    stopTTS(true);
-    setStatus('Read-aloud finished', 'success');
-    return;
-  }
-  const utter = new SpeechSynthesisUtterance(state.paras[i].text);
+  const utter = new SpeechSynthesisUtterance(text);
   const v = activeVoice();
   if (v) utter.voice = v;
-  utter.rate = parseFloat(els.rateSelect.value) || 1;
-  state.tts.utter = utter;
+  utter.rate = state.speech.rate || 1;
+
+  // Every handler checks that it still owns the current utterance. cancel() fires
+  // the old utterance's events asynchronously, and a stale onend landing after a
+  // new reply started would clear the speaking flag while the new one is talking.
   utter.onend = () => {
-    if (!state.tts.active) return;
-    setMarker(i);                      // this paragraph is now fully read
-    if (i + 1 < state.paras.length) {
-      state.tts.idx = i + 1;
-      speakNext();
-    } else {
-      stopTTS(true);
-      setStatus('Read-aloud finished', 'success');
-    }
+    if (state.tts.utter !== utter) return;
+    state.tts.utter = null;
+    state.tts.active = false;
+    state.tts.paused = false;
+    setSpeaking(false);
   };
   utter.onerror = (e) => {
-    if (e.error === 'interrupted' || e.error === 'canceled') return; // cancelled by us
-    stopTTS();
-    setStatus('Read-aloud error: ' + (e.error || 'unknown'), 'error');
+    if (state.tts.utter !== utter) return;
+    state.tts.utter = null;
+    state.tts.active = false;
+    state.tts.paused = false;
+    setSpeaking(false);
+    if (e.error === 'interrupted' || e.error === 'canceled') return;  // our own stop()
+    setStatus('Could not read the reply aloud (' + (e.error || 'unknown') + ')', 'warn');
   };
-  renderReadingState();
-  synth.speak(utter);
+
+  state.tts.utter = utter;
+  state.tts.active = true;
+  state.tts.paused = false;
+  // Optimistic: the mic must be locked out from the moment a reply is queued, not
+  // from whenever the engine gets round to firing onstart.
+  setSpeaking(true);
+  try {
+    synth.speak(utter);
+  } catch {
+    state.tts.utter = null;
+    state.tts.active = false;
+    setSpeaking(false);
+  }
 }
 
-// `finished` separates "read to the end" from "the user stopped": stopTTS() is
-// also called to silence the voice when a new source loads (js/reader.js) or when
-// a reaction starts, and those must not announce that reading was stopped.
-function stopTTS(finished) {
-  if (synth) {
-    try { synth.cancel(); } catch { /* noop */ }
-  }
-  const wasActive = state.tts.active;
+// Silence the voice. Safe to call at any time, including when nothing is speaking.
+function stopTTS() {
+  const had = state.tts.utter;
+  state.tts.utter = null;        // clears ownership first, so stale events bail out
   state.tts.active = false;
   state.tts.paused = false;
-  state.tts.idx = -1;
-  state.tts.utter = null;
-  setPauseBtn('Pause');
-  els.btnPause.disabled = true;
-  els.btnStop.disabled = true;
-  if (wasActive && !finished) setStatus('Stopped reading');
-  if (state.paras.length) renderReadingState();
+  if (synth) { try { synth.cancel(); } catch { /* noop */ } }
+  if (had) setSpeaking(false);
+}
+
+// ---------- transport: pause / resume / replay ----------
+// speechSynthesis pauses and resumes an in-flight utterance in place, so a paused
+// reply carries on from the same word rather than starting over.
+
+function pauseTTS() {
+  if (!synth || !state.tts.active || state.tts.paused) return;
+  try { synth.pause(); } catch { return; }
+  state.tts.paused = true;
+  notifyControls();
+}
+
+function resumeTTS() {
+  if (!synth || !state.tts.active || !state.tts.paused) return;
+  try { synth.resume(); } catch { return; }
+  state.tts.paused = false;
+  notifyControls();
+}
+
+function togglePauseTTS() {
+  if (state.tts.paused) resumeTTS(); else pauseTTS();
+}
+
+// The pause button keeps its shape while the label swaps between Pause / Resume —
+// exactly as it did in the extension — so the control does not jump around as a
+// reply is paused and picked up again. Built with DOM calls rather than innerHTML,
+// which nothing in this app renders into.
+function setPauseBtn(label) {
+  if (els.btnPause.dataset.label === label) return;
+  els.btnPause.dataset.label = label;
+  const ic = document.createElement('span');
+  ic.className = 'ic ic-' + (label === 'Resume' ? 'play' : 'pause');
+  ic.setAttribute('aria-hidden', 'true');
+  els.btnPause.textContent = '';
+  els.btnPause.appendChild(ic);
+  els.btnPause.appendChild(document.createTextNode(label));
+  els.btnPause.title = label;
+}
+
+// The [▶] control. A paused reply continues where it left off; otherwise the
+// newest reply is read again from the top.
+function speakLatestReply() {
+  if (!synth) return;
+  if (state.tts.active && state.tts.paused) { resumeTTS(); return; }
+  const reply = latestAiReply();
+  if (reply) speakReply(reply.text);
 }
 
 // ---------- wiring ----------
-function initTTS() {
+function initTTS(onState) {
+  onSpeakingChange = onState;
+
+  // The speech bar is wired before the capability check so the buttons never end
+  // up as dead listeners; updateControls() keeps them disabled when there is no synth.
+  els.btnRead.addEventListener('click', speakLatestReply);
+  els.btnPause.addEventListener('click', togglePauseTTS);
+  els.btnStop.addEventListener('click', stopTTS);
+
   if (!synth) {
-    els.btnRead.disabled = els.btnPause.disabled = els.btnStop.disabled = true;
-    els.voiceSelect.disabled = els.rateSelect.disabled = true;
+    // The reply is still shown; say once that it cannot be heard.
+    if (els.voiceSelect) els.voiceSelect.disabled = true;
+    if (els.rateSelect) els.rateSelect.disabled = true;
+    setStatus('This browser has no speech synthesis — replies will not be read aloud', 'warn');
     return;
   }
   populateVoices();
   synth.addEventListener('voiceschanged', populateVoices);
-
-  els.btnRead.addEventListener('click', () => {
-    if (!state.paras.length) { setStatus('Load text first', 'warn'); return; }
-    // Read from the selected paragraph itself — not the one after it.
-    if (state.markerP < 0) {
-      setMarker(0);
-      readAloudFrom(0);
-    } else {
-      readAloudFrom(state.markerP);
-    }
-  });
-
-  els.btnPause.addEventListener('click', () => {
-    if (!state.tts.active) return;
-    if (state.tts.paused) {
-      synth.resume();
-      state.tts.paused = false;
-      setPauseBtn('Pause');
-      setStatus('Reading…');
-    } else {
-      synth.pause();
-      state.tts.paused = true;
-      setPauseBtn('Resume');
-      setStatus('Paused — react here if you like');
-    }
-  });
-
-  els.btnStop.addEventListener('click', () => stopTTS(false));
 }

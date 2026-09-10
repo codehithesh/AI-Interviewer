@@ -3,10 +3,14 @@
 // ============================================================
 // The modal always edits a draft; storage is only touched by Save. Closing
 // without saving throws the draft away and restores the last saved state.
+//
+// The one exception is speech. The voice and the speed live in the speech bar
+// under the nav bar, not in this modal, so they are applied and stored the moment
+// they change — there is no Save step for them (see applySpeech / storeSpeech).
 
 'use strict';
 
-let prefs = null;  // what is currently stored (or would be, in a plain tab)
+let prefs = null;  // what is currently stored
 let draft = null;  // what the open settings modal is editing
 
 function savedKeys() { return (prefs && prefs.keys) || {}; }
@@ -49,6 +53,26 @@ function selectProvider(prov) {
   setApiError('');
 }
 
+// ---------- speech ----------
+// Speech is no longer edited in this modal: the voice and the speed live in the
+// bar under the nav bar, so they take effect — and are stored — the moment they
+// change. This paints the bar's controls from whatever is actually in force.
+// autoSpeak has no control of its own and stays on: replies are read aloud as
+// they arrive, and Read replays the newest one.
+function applySpeech() {
+  const s = (prefs && prefs.speech) || state.speech;
+  state.speech = { voice: s.voice, rate: s.rate, autoSpeak: s.autoSpeak };
+  els.voiceSelect.value = state.speech.voice;
+  els.rateSelect.value = String(state.speech.rate);
+}
+
+// Store the bar's voice and speed at once — there is no Save step for them.
+async function storeSpeech() {
+  if (!prefs) prefs = blankPrefs();
+  prefs = shapePrefs(Object.assign({}, prefs, { speech: Object.assign({}, state.speech) }));
+  await writePrefs(prefs);
+}
+
 // ---------- draft <-> stored preferences ----------
 // the modal always opens on exactly what is stored
 function draftFromPrefs() {
@@ -66,7 +90,7 @@ function applyDraftToInputs() {
     providerInput(p.id).value = draft.keys[p.id] || '';
     const def = draft.models[p.id] || p.def || p.models[0].v;
     const sel = providerModel(p.id);
-    if (p.models.some((m) => m.v === def)) sel.value = def;
+    if (sel && p.models.some((m) => m.v === def)) sel.value = def;
   }
   selectProvider(draft.provider);
   previewThemePref(draft.theme);
@@ -87,16 +111,19 @@ async function saveSettings() {
     draft.provider = state.provider;
     draft.theme = uiThemePref;
   }
-  prefs = shapePrefs(draft || prefs);
+  // Speech is not part of the draft, so carry what the bar currently holds: a Save
+  // from this modal must never reset the chosen voice or speed.
+  prefs = shapePrefs(Object.assign({}, draft || prefs, { speech: Object.assign({}, state.speech) }));
   await writePrefs(prefs);
+  draftFromPrefs();
   syncThemePref();
+  applySpeech();
   updateForgetBtn();
   // say so when a key had to be repaired — the alternative is a user staring at
   // an unchanged-looking field wondering why the provider rejected it
   const note = dropped
     ? ` — dropped ${dropped} character${dropped === 1 ? '' : 's'} that cannot be in a key`
     : '';
-  // both builds persist now — only the storage area behind them differs
   setStatus('Saved — keys, provider, models and appearance kept in this browser' + note, 'success');
   closeModal(els.settingsModal);
 }
@@ -114,7 +141,7 @@ async function forgetKeys() {
   for (const p of PROVIDERS) providerInput(p.id).value = '';
   const wasDraft = draft;
   if (wasDraft) wasDraft.keys = {};
-  // only the keys go: provider / model / appearance picks are a separate choice
+  // only the keys go: provider / model / appearance / speech picks are separate
   prefs = shapePrefs(wasDraft || prefs || {});
   draftFromPrefs();
   updateForgetBtn();
@@ -155,6 +182,17 @@ function wireSettings() {
     }
   });
 
+  // Speech lives in the bar under the nav bar, not in this modal: a voice or speed
+  // change takes effect and is stored at once, so there is no Save step for it.
+  els.voiceSelect.addEventListener('change', () => {
+    state.speech.voice = els.voiceSelect.value;
+    storeSpeech();
+  });
+  els.rateSelect.addEventListener('change', () => {
+    state.speech.rate = parseFloat(els.rateSelect.value) || 1;
+    storeSpeech();
+  });
+
   els.themeSystem.addEventListener('click', () => previewThemePref('system'));
   els.themeLight.addEventListener('click', () => previewThemePref('light'));
   els.themeDark.addEventListener('click', () => previewThemePref('dark'));
@@ -173,12 +211,17 @@ function wireSettings() {
 
 // Load what was saved, paint it, and render the modal's contents.
 async function initSettings() {
-  prefs = await loadPrefs();  // saved keys + provider + models + theme
+  prefs = await loadPrefs();  // saved keys + provider + models + theme + speech
   state.provider = prefs.provider;
+  state.speech = Object.assign({}, prefs.speech);
+  applySpeech();              // paint the speech bar's voice and speed
   syncThemePref();            // paint the saved appearance
   renderProviderCards();      // model <option>s use the saved per-provider picks
   draftFromPrefs();
   applyDraftToInputs();       // the modal opens on exactly what is stored
+  // The saved voice is in state before the voice list is built, and Chrome fills
+  // that list asynchronously — so build it again here as well as at init.
+  populateVoices();
   if (Object.keys(prefs.keys).length) {
     setStatus('Saved API keys restored — open Settings to review or erase them', 'success');
   }

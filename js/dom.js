@@ -6,36 +6,40 @@
 
 const $ = (id) => document.getElementById(id);
 
-// Filled in by cacheEls() during boot, once every pane has been mounted.
+// Filled in by cacheEls() during boot, once every view has been mounted.
 const els = {};
 
 function cacheEls() {
   Object.assign(els, {
     toastStack: $('toast-stack'),
-    btnSettings: $('btn-settings'), btnSaveSettings: $('btn-save-settings'), btnCloseSettings: $('btn-close-settings'),
-    exportMenu: $('export-menu'), btnExport: $('btn-export'),
-    btnSource: $('btn-source'),
-    readerToolbar: $('reader-toolbar'), readPos: $('read-pos'), btnReact: $('btn-react'),
-    voiceSelect: $('voice-select'), rateSelect: $('rate-select'),
+
+    // chat
+    chat: $('chat'), chatHint: $('chat-hint'), chatText: $('chat-text'),
+    btnMic: $('btn-mic'), btnSend: $('btn-send'),
+
+    // speech bar, directly under the nav bar
     btnRead: $('btn-read'), btnPause: $('btn-pause'), btnStop: $('btn-stop'),
-    reading: $('reading'),
-    reactions: $('reactions'), reactHint: $('react-hint'),
-    reactText: $('react-text'), btnMic: $('btn-mic'), btnSend: $('btn-send'),
-    // full-screen reactions sheet
-    reactionsCol: $('reactions-col'),
-    btnCloseReactions: $('btn-close-reactions'),
-    // modals
-    sourceModal: $('source-modal'), settingsModal: $('settings-modal'),
-    // source modal — markup in js/source-view.js, behaviour in js/source.js
-    sourceTabs: $('source-tabs'), tabPaste: $('tab-paste'), tabUrl: $('tab-url'),
-    panePaste: $('pane-paste'), paneUrl: $('pane-url'),
-    pasteText: $('paste-text'), urlInput: $('url-input'), urlHint: $('url-hint'),
-    loadSource: $('load-source'),
+    voiceSelect: $('voice-select'), rateSelect: $('rate-select'),
+
+    // export, mounted in the chat header
+    exportMenu: $('export-menu'), btnExport: $('btn-export'),
+
+    // settings modal
+    btnSettings: $('btn-settings'), btnSaveSettings: $('btn-save-settings'), btnCloseSettings: $('btn-close-settings'),
+    settingsModal: $('settings-modal'),
     themeSystem: $('theme-system'), themeLight: $('theme-light'), themeDark: $('theme-dark'),
     providerList: $('provider-list'),
     apiError: $('api-error'),
     btnForgetKeys: $('btn-forget-keys'),
   });
+
+  // Every id the behaviour modules reach for. A missing one means a view did not
+  // mount — and caching null silently is exactly what turns that into a blank
+  // page with no explanation, so fail here naming them instead.
+  const missing = Object.keys(els).filter((k) => !els[k]);
+  if (missing.length) {
+    throw new Error('missing elements: ' + missing.join(', ') + ' (a view did not mount)');
+  }
 }
 
 // ---------- modals (generic) ----------
@@ -61,23 +65,15 @@ function wireModals() {
 // how they look — both are red:
 //
 //  · 'error' stays until dismissed. It reports something that happened *to* the
-//    user: a permission prompt they are still reading, a page that failed to
-//    load, a dead API key. It can arrive while their attention is elsewhere, and
-//    the URL-loading failures carry more text than a timed toast can be read in.
+//    user: a permission prompt they are still reading, a dead API key. It can
+//    arrive while their attention is elsewhere.
 //  · 'warn' clears itself after TOAST_MS. It is a nudge about what to do next —
-//    "Load a source text first", "Paste some text first". Those are falsified by
-//    the very next successful action, so a sticky one would sit in the stack
-//    asserting something no longer true. Every other message clears itself too.
+//    those are falsified by the very next successful action, so a sticky one
+//    would sit in the stack asserting something no longer true.
 //
-// Two guards keep the stack honest:
-//
-//  · the same message is not posted twice in a row. The microphone and read-aloud
-//    re-announce the same thing on a retry, and with stacking on, a literal
-//    duplicate would simply sit there. The check looks only at the newest toast:
-//    testing the whole stack would let an old copy swallow fresh news for as long
-//    as it stays open — and for an error that is indefinitely.
-//  · a long session can pile toasts up, so the stack is capped in height and
-//    scrolls rather than growing over the reader.
+// Two guards keep the stack honest: the same message is not posted twice in a
+// row (the mic and the voice re-announce the same thing on a retry), and the
+// stack is capped in height and scrolls rather than growing over the chat.
 
 const TOAST_MS = 6000;
 
@@ -108,8 +104,8 @@ function setStatus(msg, kind) {
 
   const text = document.createElement('span');
   text.className = 'toast-msg';
-  // textContent, never innerHTML: these messages carry the titles and URLs of the
-  // pages being read, which is exactly what must not be parsed as markup
+  // textContent, never innerHTML: these messages carry model output and provider
+  // errors, which is exactly what must not be parsed as markup
   text.textContent = msg;
 
   const close = document.createElement('button');

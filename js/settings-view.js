@@ -1,5 +1,5 @@
 // ============================================================
-// Settings pane — markup only
+// Settings view — markup only
 // ============================================================
 // Mounted into the [data-view="settings"] placeholder at the end of <body> by the
 // mountView() call at the bottom of this file. Behaviour lives in js/settings.js.
@@ -27,8 +27,8 @@ const SETTINGS_VIEW_HTML = `
         </div>
       </div>
 
-      <h4 class="modal-label">AI evaluation provider</h4>
-      <p class="hint">Pick a provider and type its API key, then choose its model. Nothing is stored until you press <b>Save</b> — saving keeps the keys, the provider, the models and your light/dark choice in this extension’s private browser storage (nothing else can read them). Keys are sent only to their provider when you evaluate. “Forget saved keys” erases them from the browser completely.</p>
+      <h4 class="modal-label">AI provider</h4>
+      <p class="hint">Pick a provider and type its API key, then choose its model. Nothing is stored until you press <b>Save</b> — saving keeps the keys, the provider, the models and your appearance choice in this browser's own storage. (The voice and speed in the speech bar save themselves as you change them.) Keys are sent only to their provider when you send a message. “Forget saved keys” erases them from the browser completely.</p>
 
       <div id="provider-list"></div>
 

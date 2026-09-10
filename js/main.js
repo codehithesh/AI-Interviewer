@@ -11,14 +11,13 @@ function wireGlobals() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach((ov) => closeModal(ov));
-      if (els.reactionsCol.classList.contains('open')) closeReactions();
       closeExportMenu();
     }
   });
 }
 
 async function init() {
-  // 1 · the mounted panes are in the DOM — cache their elements
+  // 1 · the mounted views are in the DOM — cache their elements
   cacheEls();
 
   // 2 · wiring (synchronous, so the UI is live immediately)
@@ -26,21 +25,18 @@ async function init() {
   wireToasts();
   wireGlobals();
   initTheme();
-  initTTS();
+  initTTS(updateControls);
   initSTT();
-  wireReader();
-  wireSource();
   wireComposer();
-  wireReactions();
+  wireChat();
+  wireMarkdown();
   wireExport();
   wireSettings();
 
-  // 3 · saved settings: keys, provider, models, appearance
+  // 3 · saved settings: keys, provider, models, appearance, speech
   await initSettings();
 
-  // 4 · open on the reading pane
-  setReactionsOpen(false);  // the sheet stays out of the way until React
-  consumePendingGrab();
+  // 4 · the chat is ready for the first message
   updateControls();
   autoGrowComposer();
 }

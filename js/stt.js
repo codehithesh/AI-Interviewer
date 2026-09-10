@@ -1,5 +1,5 @@
 // ============================================================
-// SPEECH-TO-TEXT — voice reactions (native, no API)
+// SPEECH-TO-TEXT — dictate a message (native, no API)
 // ============================================================
 // Built on the browser's own SpeechRecognition: no speech API to pay for, no key
 // to configure, nothing hosted by this project. Be precise about what that does
@@ -8,9 +8,9 @@
 // transcribed and dictation does not work offline (hence the 'network' error
 // handled below). That is the browser's behaviour, not a decision this app makes,
 // but it is the one place where this app's data leaves the machine. Read-aloud
-// (js/tts.js) really is fully local. See the README's Privacy section.
+// (js/tts.js) really is fully local.
 //
-// The transcript is written straight into the reaction composer (js/composer.js);
+// The transcript is written straight into the chat composer (js/composer.js);
 // this file owns only the microphone and the recording state.
 //
 // A recording is NOT the same thing as one browser recognition session. Chrome
@@ -20,8 +20,8 @@
 // sentence. So the user's intent (wantListening) is tracked separately from
 // whatever session happens to be running, and a fresh session is opened
 // underneath the same recording until the user actually stops. The only things
-// that end a recording are the mic button, closing the sheet, sending, and a
-// fatal error such as a blocked microphone.
+// that end a recording are the mic button, sending a message, and a fatal error
+// such as a blocked microphone.
 
 'use strict';
 
@@ -44,6 +44,8 @@ let restartTimer = null;
 let restartFails = 0;
 let errorSessions = 0;
 
+function sttSupported() { return !!SR; }
+
 // ---------- transcript ----------
 // Join two fragments with exactly one space, and never leave a leading one.
 function joinSpeech(a, b) { return (a + ' ' + b).replace(/\s+/g, ' ').trim(); }
@@ -51,7 +53,7 @@ function joinSpeech(a, b) { return (a + ' ' + b).replace(/\s+/g, ' ').trim(); }
 // recBase is what the composer held before recording began, so dictation appends
 // to whatever was already typed rather than replacing it.
 function paintTranscript() {
-  els.reactText.value = joinSpeech(state.recBase, joinSpeech(committed, sessionText));
+  els.chatText.value = joinSpeech(state.recBase, joinSpeech(committed, sessionText));
   autoGrowComposer();
   updateControls();
 }
@@ -110,9 +112,11 @@ function endListening() {
 function toggleListening() {
   if (!recognition) return;
   if (state.listening) { stopListening(); return; }
-  if (state.busyEval || !state.pending) return;
+  // A reply being read aloud and a live microphone are mutually exclusive — the
+  // recogniser would transcribe the AI's own voice.
+  if (state.busy || state.speaking) return;
 
-  state.recBase = els.reactText.value.trim();
+  state.recBase = els.chatText.value.trim();
   committed = '';
   sessionText = '';
   restartFails = 0;
@@ -121,7 +125,7 @@ function toggleListening() {
   state.listening = true;
   els.btnMic.classList.add('listening'); // icon turns into icon + “Recording”
   els.btnMic.title = 'Recording — click to stop';
-  setStatus('Listening… speak your reaction (native speech-to-text)');
+  setStatus('Listening… speak your message (native speech-to-text)');
   try {
     recognition.start();
   } catch (err) {

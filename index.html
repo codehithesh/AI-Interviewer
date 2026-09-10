@@ -3,68 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reaction Learner</title>
+<title>AI Interviewer</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<noscript>
+  <div class="boot-error">This app needs JavaScript. Enable it for this page and reload.</div>
+</noscript>
+
+<!-- ============================================================
+     Boot guard — it reports WHY the page is empty, in the page itself, so nobody
+     has to open a console to find out.
+
+     It must run BEFORE the app scripts. Two distinct failures reach it:
+       · a <script> that will not load fires 'error' on the element, and that
+         event does not bubble — so the listener is registered in the capture
+         phase, before the element exists;
+       · init() is async, so a throw inside it arrives as an unhandled rejection
+         and never reaches a window 'error' handler at all.
+     Opening this file directly (file://) is the most common cause of the first
+     one: some browsers refuse to read sibling files for a local page. Serve the
+     directory over http://localhost instead — the microphone and camera need a
+     secure context anyway, which file:// is not.
+     ============================================================ -->
+<script>
+(function () {
+  function base(p) { return String(p || '').split('/').pop().split('?')[0] || 'unknown'; }
+  function fail(why) {
+    var box = document.querySelector('.boot-error');
+    if (box) {
+      if (box.textContent.indexOf(why) < 0) box.textContent += '\n\n· ' + why;
+      return;
+    }
+    box = document.createElement('div');
+    box.className = 'boot-error';
+    box.textContent = 'AI Interviewer failed to start.\n\n· ' + why
+      + '\n\nIf this page was opened as a file:// URL, that is the usual cause: '
+      + 'the browser will not read the js/ files next to it. Serve the folder over '
+      + 'http://localhost instead (e.g. python3 -m http.server 8123) and reload.';
+    document.body.appendChild(box);
+  }
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target.tagName === 'SCRIPT') {
+      fail('the script ' + base(e.target.src) + ' did not load');
+    } else {
+      fail('error in ' + base(e.filename) + ':' + e.lineno + ' — ' + e.message);
+    }
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason || {};
+    // r.stack names the file and line, which is the whole point of showing this
+    fail(String(r.stack || r.message || r));
+  });
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (document.querySelector('[data-view="chat"]')) {
+        fail('the interface did not mount (js/chat-view.js did not run)');
+      }
+    }, 500);
+  });
+})();
+</script>
+
 <div class="app">
 
-  <!-- ===================== TRUE SPLIT: both panes run the full height ===================== -->
-  <div class="split">
-
-    <!-- reader pane: own header, toolbar, speech, text -->
-    <section class="reader-col">
-      <div class="pane-head">
-        <span class="brand">Reaction Learner</span>
-        <div class="spacer"></div>
-        <button id="btn-source" class="btn icon-btn" title="Paste text to study" aria-label="Add text"><span class="ic ic-plus" aria-hidden="true"></span></button>
-        <button id="btn-settings" class="btn icon-btn" title="Settings" aria-label="Settings"><span class="ic ic-gear" aria-hidden="true"></span></button>
-      </div>
-      <div class="speech-bar">
-        <span class="mini-label">Read aloud</span>
-        <select id="voice-select" title="Voice"></select>
-        <select id="rate-select" title="Speed">
-          <option value="0.5">0.5×</option>
-          <option value="0.75">0.75×</option>
-          <option value="1" selected>1×</option>
-          <option value="1.25">1.25×</option>
-          <option value="1.5">1.5×</option>
-          <option value="2">2×</option>
-        </select>
-        <button id="btn-read" class="btn compact"><span class="ic ic-play" aria-hidden="true"></span>Read</button>
-        <button id="btn-pause" class="btn compact" disabled><span class="ic ic-pause" aria-hidden="true"></span>Pause</button>
-        <button id="btn-stop" class="btn compact" disabled><span class="ic ic-stop" aria-hidden="true"></span>Stop</button>
-      </div>
-      <div id="reading" class="reading">
-        <div class="empty-state">
-          No text loaded. Press <b>+</b> in the top bar to paste text,<br>
-          or click the extension’s <b>toolbar icon while on a webpage</b> to load that page’s text.
-        </div>
-      </div>
-      <!-- bottom status strip — the reading-position readout. Hidden until a
-           paragraph has been marked as read. -->
-      <div id="reader-toolbar" class="reader-toolbar hidden">
-        <span id="read-pos" class="dim"></span>
-      </div>
-      <!-- the single way into the reactions sheet: arms a reaction at the marker,
-           opens the sheet and puts the caret in the composer. Never disabled —
-           it explains what is missing with a toast instead. -->
-      <button id="btn-react" class="reactions-fab" title="React to the text at your spot"><span class="ic ic-msg" aria-hidden="true"></span>React</button>
-    </section>
-
-    <!-- The reactions sheet is mounted here. Its markup lives in
-         js/reactions-view.js — a page opened over file:// may not read other
-         local files, so each pane carries its own markup in its own script and
-         mounts it before any behaviour is wired. -->
-    <div data-view="reactions"></div>
-  </div>
+  <!-- The chat is the whole app. Its markup lives in js/chat-view.js — a page
+       opened over file:// may not read other local files, so each view carries
+       its markup in its own script and mounts it before any behaviour is wired. -->
+  <div data-view="chat"></div>
 
   <!-- ===================== TOAST STACK (bottom-left; each dismissed by hand) ===================== -->
   <div id="toast-stack" class="toast-stack" role="status" aria-live="polite"></div>
 </div>
-
-<!-- The source modal is mounted here — markup in js/source-view.js. -->
-<div data-view="source"></div>
 
 <!-- The settings modal is mounted here — markup in js/settings-view.js. -->
 <div data-view="settings"></div>
@@ -75,15 +85,15 @@
      index.html must keep working when opened straight from disk.
      ============================================================ -->
 
-<!-- 1 · pane markup, mounted into the mount points above -->
+<!-- 1 · view markup, mounted into the mount points above -->
 <script src="js/view.js"></script>
+<script src="js/chat-view.js"></script>
 <script src="js/settings-view.js"></script>
-<script src="js/reactions-view.js"></script>
-<script src="js/source-view.js"></script>
 
-<!-- 2 · foundation: state, helpers, element cache -->
+<!-- 2 · foundation: state, helpers, markdown, element cache -->
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/markdown.js"></script>
 <script src="js/dom.js"></script>
 <script src="js/theme.js"></script>
 
@@ -99,14 +109,10 @@
 <script src="js/store.js"></script>
 <script src="js/settings.js"></script>
 
-<!-- 6 · reading, composer, reactions, evaluation, export -->
-<script src="js/marker.js"></script>
+<!-- 6 · composer, chat, export -->
 <script src="js/composer.js"></script>
-<script src="js/reader.js"></script>
-<script src="js/source.js"></script>
-<script src="js/evaluation.js"></script>
+<script src="js/chat.js"></script>
 <script src="js/export.js"></script>
-<script src="js/reactions.js"></script>
 
 <!-- 7 · boot -->
 <script src="js/main.js"></script>
