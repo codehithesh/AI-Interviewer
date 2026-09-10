@@ -35,8 +35,10 @@ function cacheEls() {
     // export, mounted in the header
     exportMenu: $('export-menu'), btnExport: $('btn-export'),
 
-    // code editor popup — it INSERTS into the composer, it does not send (js/code-editor.js)
-    codeModal: $('im-code-modal'), codeInput: $('im-code'),
+    // code editor popup — it INSERTS into the composer, it does not send (js/code-editor.js).
+    // codeGutter is the inner span the line numbers are written into, not the box
+    // around it: that box never moves, only its contents do.
+    codeModal: $('im-code-modal'), codeInput: $('im-code'), codeGutter: $('im-code-gutter'),
     btnCodeInsert: $('im-code-insert'), btnCodeClose: $('im-code-close'),
 
     // settings modal

@@ -657,17 +657,49 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .composer { padding-inline: max(16px, calc((100% - var(--chat-max)) / 2)); }
 
 /* ---------- the code editor popup ----------
-   A plain monospace textarea. Not a permanent panel, not a code editor library:
-   it opens from the composer's [+], keeps its draft while closed, and [>] sends
-   the code as its own message. */
+   A monospace textarea with a line-number gutter. Not a permanent panel, not a
+   code editor library: it opens from the composer's [+], keeps its draft while
+   closed, and [Insert into answer] folds the code into the answer. Line numbers
+   and Tab indentation are hand-rolled in js/code-editor.js. */
 .code-modal { width: min(820px, 100%); height: min(640px, calc(100vh - 40px)); }
 .code-body { padding: 14px 18px 18px; }
-.code-input {
-  flex: 1 1 auto; min-height: 0; width: 100%; resize: none;
+
+/* The frame and the vertical padding sit on the WRAPPER, not on the textarea. With
+   no padding above either child, the gutter's first number and the first line of
+   code start at the same edge and stay aligned at every scroll position — put the
+   padding on the textarea instead and the numbers drift down by it. */
+.code-editor {
+  flex: 1 1 auto; min-height: 0; display: flex; align-items: stretch;
+  overflow: hidden; padding-block: 10px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+}
+/* The textarea's own focus ring would sit inside this frame; the frame itself takes
+   the accent instead, so focus reads as one box rather than two. */
+.code-editor:focus-within { border-color: var(--accent); }
+
+.code-gutter {
+  flex: 0 0 auto; overflow: hidden; user-select: none;
+  padding: 0 10px 0 12px; border-right: 1px solid var(--border);
+  color: var(--text-dim); text-align: right;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px; line-height: 1.55; tab-size: 2; white-space: pre;
+  font-size: 13px; line-height: 1.55;
+}
+/* The numbers: one text node, scrolled by transform in js/code-editor.js. pre keeps
+   the newline-separated numbers on their own rows. */
+.code-gutter-inner { display: block; white-space: pre; }
+
+/* font-size and line-height are deliberately identical to .code-gutter above. Drift
+   between them is the one thing that would slide the numbers off the code. */
+.code-input {
+  flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; resize: none;
+  padding: 0 12px; background: transparent; border: 0; border-radius: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.55; tab-size: 2;
+  /* pre, not pre-wrap: a line that does not wrap is one row of the gutter. */
+  white-space: pre;
   overflow: auto;
 }
+.code-input:focus, .code-input:focus-visible { outline: none; border-color: transparent; }
 
 /* ---------- generic form rows, and one utility ---------- */
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }

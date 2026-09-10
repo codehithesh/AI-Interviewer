@@ -1,5 +1,7 @@
 # AI Interviewer
 
+![AI Interviewer](https://github.com/codehithesh/AI-Interviewer/blob/main/assets/s1.png)
+
 A voice-first interview practice app. You configure an interview once in Settings,
 press **Start interview**, and an AI interviews you out loud — one question at a time.
 You answer by speaking or by typing, optionally attaching code from a code editor

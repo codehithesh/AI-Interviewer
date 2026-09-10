@@ -142,10 +142,16 @@ const INTERVIEW_VIEW_HTML = `
 </div>
 
 <!-- ===================== CODE EDITOR POPUP =====================
-     A plain monospace <textarea> — no CodeMirror, no Monaco, no CDN. Opened by
-     the composer's [+]. [Insert into answer] does NOT send: it drops the draft
-     into the composer as a fenced code block and closes, so prose and code leave
-     as one answer. That overrides §5 — see js/code-editor.js for why. -->
+     A monospace <textarea> with a line-number gutter — no CodeMirror, no Monaco,
+     no CDN. Opened by the composer's [+]. [Insert into answer] does NOT send: it
+     drops the draft into the composer as a fenced code block and closes, so prose
+     and code leave as one answer. That overrides §5 — see js/code-editor.js for why.
+
+     The editor is still hand-rolled, so it carries only the two things a code
+     field is unusable without: the gutter, and Tab / Shift+Tab indentation
+     (js/code-editor.js). The gutter is decorative — the textarea already
+     announces its own content — so it is hidden from assistive technology
+     rather than read out as numbers. -->
 <div id="im-code-modal" class="modal-overlay hidden">
   <div class="modal code-modal" role="dialog" aria-modal="true" aria-labelledby="im-code-title">
     <div class="modal-head">
@@ -157,7 +163,10 @@ const INTERVIEW_VIEW_HTML = `
     </div>
     <div class="modal-body code-body">
       <label class="sr-only" for="im-code">Code to add to your answer</label>
-      <textarea id="im-code" class="code-input" spellcheck="false" autocomplete="off" placeholder="Paste or type code here — [Insert into answer] adds it to your answer as a code block."></textarea>
+      <div class="code-editor">
+        <div class="code-gutter" aria-hidden="true"><span id="im-code-gutter" class="code-gutter-inner">1</span></div>
+        <textarea id="im-code" class="code-input" spellcheck="false" autocomplete="off" placeholder="Paste or type code here — [Insert into answer] adds it to your answer as a code block."></textarea>
+      </div>
     </div>
   </div>
 </div>
