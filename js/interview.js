@@ -227,15 +227,12 @@ function renderReadiness() {
   const note = document.createElement('p');
   note.className = 'dim';
   note.textContent = 'The interviewer will greet you and ask one question at a time. '
-    + 'Answer by voice or by typing. Press Start interview to begin.';
+    + 'Answer by voice or by typing. Press Start interview in the panel on the left to begin.';
   card.appendChild(note);
 
-  const start = document.createElement('button');
-  start.type = 'button';
-  start.className = 'btn primary';
-  start.textContent = 'Start interview';
-  start.addEventListener('click', startInterview);
-  card.appendChild(start);
+  // No [Start interview] button on this card. There is exactly one control that
+  // begins a session — the rail button in the left panel — and a second copy here
+  // gave the same action two names on one screen. The line above points at it.
 
   li.appendChild(card);
   els.transcript.appendChild(li);

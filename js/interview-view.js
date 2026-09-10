@@ -8,7 +8,7 @@
 //   header      — title, timer, [Export], [Settings]  → js/export.js, js/interview.js
 //   rail        — AI tile + candidate tile + [Cam]    → js/participants.js
 //   transcript  — bubbles + readiness card            → js/interview.js
-//   composer    — [+], [Mic], text, [>]               → js/composer.js
+//   composer    — [+], text, [Mic], [>]               → js/composer.js
 //   code popup  — monospace textarea                  → js/code-editor.js
 //
 // Every control is disabled in the markup and then enabled by updateControls():
@@ -128,16 +128,15 @@ const INTERVIEW_VIEW_HTML = `
       </div>
 
       <!-- ===================== COMPOSER =====================
-           One row, in reading order: the two tools that put something INTO the
-           answer, then the answer itself, then the one thing that sends it. [+] and
-           [Mic] are on the left so [>] is the only control to the right of the
-           field — the end of the line, where the eye already is when the typing
-           stops. -->
+           One row, in reading order: [+], which puts code INTO the answer, then the
+           answer itself, then the two controls that finish it — [Mic] and [>]. The
+           two send-side controls sit together at the end of the line, where the eye
+           already is when the typing stops. -->
       <div class="composer">
         <div class="composer-row">
           <button id="im-plus" class="btn icon-btn" title="Attach code" aria-label="Open the code editor" aria-haspopup="dialog" disabled><span class="ic ic-plus" aria-hidden="true"></span></button>
-          <button id="im-mic" class="btn icon-btn" title="Native speech-to-text" aria-label="Dictate your answer" disabled><span class="ic ic-mic" aria-hidden="true"></span><span class="rec-label">Recording</span></button>
           <textarea id="im-text" rows="1" placeholder="Type or speak…" aria-label="Your answer" disabled></textarea>
+          <button id="im-mic" class="btn icon-btn" title="Native speech-to-text" aria-label="Dictate your answer" disabled><span class="ic ic-mic" aria-hidden="true"></span><span class="rec-label">Recording</span></button>
           <button id="im-send" class="btn primary icon-btn" title="Send" aria-label="Send your answer" disabled><span class="ic ic-send" aria-hidden="true"></span></button>
         </div>
       </div>

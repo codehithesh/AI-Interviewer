@@ -183,6 +183,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
    to shrink below its content and the whole page scrolls instead of the list. */
 .iv { display: flex; flex-direction: column; height: 100vh; }
 .iv-header {
+  position: relative;            /* the timer centres against the BAR, not the row */
   flex: 0 0 auto; height: 48px; box-sizing: border-box;
   background: var(--panel); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 12px; padding: 0 16px;
@@ -192,10 +193,19 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   font-size: 14px; font-weight: 650; color: var(--text);
   letter-spacing: 0.01em; white-space: nowrap;
 }
+/* The timer is centred on the header itself rather than placed in the flex row.
+   The row's sides are not equal — a short title on the left, two buttons on the
+   right — so centring it as a flex item would sit it off-centre by the width
+   difference. Taking it out of the flow and pinning it to the header's own
+   midpoint centres it whatever the sides contain, and the flex gap no longer
+   counts the timer as one of the items. */
 .timer {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600;
   letter-spacing: 0.04em; color: var(--text-dim);
   padding: 3px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); /* opaque, so the title never shows through it */
+  white-space: nowrap;
 }
 /* the last minute before a timed interview ends — the countdown text itself is
    the primary signal, this only reinforces it */
@@ -293,8 +303,17 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .check { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; cursor: pointer; }
 .check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
 
-/* the status line (§8.3): Speaking / Listening / Thinking / Ready */
-.iv-status { flex: 0 0 auto; padding: 4px 16px 4px 4px; }
+/* the status line (§8.3): Speaking / Listening / Thinking / Ready
+   It reads as a bar in its own right — the panel surface, a rule along its top
+   edge separating it from the transcript, and vertical padding that gives the
+   single line of text somewhere to sit. The composer directly below supplies the
+   rule along its bottom edge. */
+.iv-status {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+}
 .status-text { font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-dim); }
 
 /* ---------- transcript ----------
@@ -478,10 +497,11 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; flex: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- composer — one row: [+] [Mic] growing input [>] ----------
+/* ---------- composer — one row: [+] growing input [Mic] [>] ----------
    [Cam] is deliberately not here: it lives in the rail beside the session button,
-   because the self-view is local and stays live on every screen state. [>] is the
-   only control to the right of the field, so the row ends where the answer does.
+   because the self-view is local and stays live on every screen state. [+] is the
+   only control at the start of the line, and the two controls that finish the
+   answer — the mic and the send button — sit together at the end of it.
 
    Every control on this row is exactly 34px tall and centred on the same line. The
    field is no exception, which is why its height is pinned here instead of being
@@ -499,10 +519,13 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   padding: 6px 10px; line-height: 20px;
 }
 #im-text.grown { overflow-y: auto; }
-#im-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; }
+/* The mic is icon-only at rest (.icon-btn pins it to 34px), so while recording it
+   takes its width back to show the "Recording" label beside the glyph, growing
+   into the row's gap on the send side. */
+#im-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; width: auto; padding: 0 12px; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
-/* while recording the button widens to show the state next to the mic glyph */
 .rec-label { display: none; font-size: 12.5px; font-weight: 600; }
+#im-mic.listening .rec-label { display: inline; }
 /* ---------- modals ---------- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
@@ -652,6 +675,10 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   #voice-select { flex: 1 1 140px; }
   .iv-header { gap: 8px; }
   .timer { font-size: 13px; padding: 3px 7px; }
+  /* On a phone the title, the centred timer and the two buttons do not all fit.
+     The title is the one piece the bar can lose without taking a control away, so
+     it goes — the timer and both buttons stay. */
+  .iv-header .head-title { display: none; }
 }
 
 /* Motion is decoration here: the speaking state is also carried by the status
