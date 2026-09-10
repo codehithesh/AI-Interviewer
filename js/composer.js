@@ -124,32 +124,28 @@ function updateControls() {
   // ---------- the status readout (§8.3) ----------
   // The bar exists only while there is something to report: thinking, speaking or
   // listening. A screen that has settled — Ready, or a finished interview — has no
-  // activity to name, so the bar is taken out of the layout rather than left
-  // sitting above the composer holding a word that never changes.
+  // activity to name, so the whole strip goes, background included, rather than
+  // sitting above the composer holding a word that never changes. The class is what
+  // removes it (styles.css), so the box does not linger empty.
   //
-  // It is hidden with content-visibility, not display, so the span keeps its
-  // aria-live region and a state change is still announced. The text is emptied on
-  // the way out for the same reason: the span keeps its node, so re-entering the
-  // same state later still counts as a change worth announcing.
+  // Its text is kept up to date even while the bar is hidden. The element is out of
+  // the accessibility tree when it is not displayed, so nothing is announced then;
+  // leaving the current word in place means that when the bar comes back, the live
+  // region is showing the right state rather than being refilled at the same moment
+  // it becomes visible, which browsers may miss.
   //
   // The longer Ready and Done nudges are toasts, posted once by setView() in
   // js/interview.js — they belong to the transition into those screens, not to
   // every pass through here.
   const activity = activityState();
   const paused = state.tts.paused;
-  const statusText = paused ? 'Paused — press Resume to carry on' : STATUS_TEXT[activity];
+  els.status.textContent = paused ? 'Paused — press Resume to carry on' : STATUS_TEXT[activity];
 
   // Only while a request is in the air: the sweep is the "still working" signal.
   els.statusBar.classList.toggle('shimmer', activity === 'thinking');
 
   const statusShown = state.view === 'live' && (state.busy || state.speaking || state.listening);
   els.statusBar.classList.toggle('hidden', !statusShown);
-  if (statusShown === false) {
-    els.status.textContent = '';
-  } else if (els.status.textContent !== statusText) {
-    // Guarded so a re-render does not restart an animation that is already running.
-    els.status.textContent = statusText;
-  }
 }
 
 // Typing is the user's own hand, so the answer being composed is no longer one the

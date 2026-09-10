@@ -315,19 +315,29 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   padding: 3px 16px;
   background: var(--panel);
   border-top: 1px solid var(--border);
-  text-align: center;
-  /* Hidden state is content-visibility, not display: the span keeps its aria-live
-     region while it is out of the layout, so a change of state is still announced.
-     display:none would take the whole region out of the accessibility tree and
-     silence it. .hidden is still what the class toggles; this is what does it. */
+  /* Centred as a flex item rather than with text-align: the shimmer needs a box
+     that shrink-wraps the words (see below), and that box is a flex item here. */
+  display: flex; align-items: center; justify-content: center;
 }
-.iv-status.hidden { display: block !important; content-visibility: hidden; }
+/* Taken out of the layout completely while there is nothing to report — the strip,
+   its rule and its background all go, not just the words. content-visibility would
+   keep the element's own box and paint its padding and background, which is a
+   visible empty strip; the bar is hidden as a whole, so the class does it. */
+.iv-status.hidden { display: none; }
 .status-text { font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-dim); }
 
 /* While a request is in the air the words are swept by a highlight, so a wait
    looks like a wait instead of a frozen label. It animates the text itself rather
-   than adding a spinner, which keeps the bar one line deep. */
+   than adding a spinner, which keeps the bar one line deep.
+
+   The gradient is sized as a percentage of the box that paints it, so that box has
+   to be the TEXT and not the bar. An inline span ignores background-size and paints
+   against its parent's content box — the full width of the bar — which makes the
+   highlight far wider than a short label like "Listening…" and lights up only the
+   part of it caught under the band. display: table shrink-wraps the span to its own
+   text, so the sweep is measured against the words and covers all of them. */
 .iv-status.shimmer .status-text {
+  display: table;                /* shrink-wraps, unlike inline or block */
   background-image: linear-gradient(90deg,
     var(--text-dim) 30%,
     var(--text) 50%,
