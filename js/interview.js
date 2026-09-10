@@ -210,7 +210,7 @@ function renderReadiness() {
   row('Role', cfg.role || 'not set');
   row('Type', cfg.interviewType);
   row('Difficulty', cfg.difficulty);
-  row('Duration', cfg.duration ? `${cfg.duration} minute${cfg.duration === 1 ? '' : 's'}` : 'no time limit');
+  row('Duration', `${cfg.duration} minute${cfg.duration === 1 ? '' : 's'}`);
   row('Questions', cfg.questions ? `up to ${cfg.questions}` : 'no question limit');
   card.appendChild(dl);
 
@@ -255,10 +255,12 @@ function addNotice(text) {
 // ============================================================
 // Timer
 // ============================================================
-// Counts DOWN from the configured duration and ends the interview at zero. With no
-// duration configured it counts UP instead of blocking or showing negative time.
-// The readout is text, and its title states the same thing in words, because the
-// timer may not be communicated by digits alone (§15).
+// Counts DOWN from the configured duration and ends the interview at zero. It never
+// counts up: a duration is always in force (the default when Settings leave it
+// blank — see DEFAULT_DURATION_MINUTES in js/store.js), so there is no unlimited
+// session for an elapsed-time readout to describe. The readout is text, and its
+// title states the same thing in words, because the timer may not be communicated
+// by digits alone (§15).
 
 let timerHandle = null;
 
@@ -274,20 +276,19 @@ function elapsedSeconds() {
   return state.startedAt ? (Date.now() - state.startedAt) / 1000 : 0;
 }
 
+// The fallback is belt-and-braces: snapshotConfig() and js/store.js both guarantee a
+// positive duration, so this only catches a config that was never snapshotted.
+function sessionLimitSeconds() {
+  const minutes = state.config.duration > 0 ? state.config.duration : DEFAULT_DURATION_MINUTES;
+  return minutes * 60;
+}
+
 function remainingSeconds() {
-  const limit = state.config.duration ? state.config.duration * 60 : null;
-  return limit === null ? null : limit - elapsedSeconds();
+  return sessionLimitSeconds() - elapsedSeconds();
 }
 
 function paintTimer() {
-  const remaining = remainingSeconds();
-  if (remaining === null) {
-    const up = formatClock(elapsedSeconds());
-    els.timer.textContent = up;
-    els.timer.title = `No time limit — ${up} elapsed`;
-    return;
-  }
-  const left = Math.max(0, remaining);
+  const left = Math.max(0, remainingSeconds());
   els.timer.textContent = formatClock(left);
   const mins = Math.ceil(left / 60);
   els.timer.title = left <= 0
@@ -344,7 +345,7 @@ function snapshotConfig() {
     role: typeof c.role === 'string' ? c.role : '',
     interviewType: ['technical', 'behavioral', 'general'].indexOf(c.interviewType) >= 0 ? c.interviewType : 'general',
     difficulty: ['easy', 'medium', 'hard'].indexOf(c.difficulty) >= 0 ? c.difficulty : 'medium',
-    duration: typeof c.duration === 'number' && c.duration > 0 ? c.duration : null,
+    duration: typeof c.duration === 'number' && c.duration > 0 ? c.duration : DEFAULT_DURATION_MINUTES,
     questions: typeof c.questions === 'number' && c.questions > 0 ? Math.floor(c.questions) : null,
     prompt: typeof c.prompt === 'string' ? c.prompt : '',
   };

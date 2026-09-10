@@ -85,8 +85,10 @@ async function storeSpeech() {
 // ---------- interview configuration ----------
 // Read the Interview section out of the modal into the draft, so a Save that
 // happens while the fields hold something else does not silently revert them.
-// A blank duration or question count means "no limit", which is null — never 0,
-// which would read as a limit of zero.
+// A blank duration is the default length, not "no limit": the timer always counts
+// down, so clearing the field falls back to DEFAULT_DURATION_MINUTES rather than
+// turning the interview into an endless one. A blank question count is still null,
+// which means "no question limit" — never 0, which would read as a limit of zero.
 function readInterviewInputs() {
   const num = (id) => {
     const v = parseInt($(id).value, 10);
@@ -96,7 +98,7 @@ function readInterviewInputs() {
     role: $('iv-role').value.trim(),
     interviewType: $('iv-type').value,
     difficulty: $('iv-difficulty').value,
-    duration: num('iv-duration'),
+    duration: num('iv-duration') || DEFAULT_DURATION_MINUTES,
     questions: num('iv-questions'),
     prompt: $('iv-prompt').value.trim(),
   };

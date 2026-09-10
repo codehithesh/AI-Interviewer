@@ -52,7 +52,7 @@ function timing() {
     started_at: isoOrNull(startedMs),
     finished_at: isoOrNull(state.finishedAt),
     exported_at: new Date().toISOString(),
-    configured_duration_minutes: state.config.duration,     // null → no time limit
+    configured_duration_minutes: state.config.duration,     // always a real limit
     elapsed_seconds: Math.max(0, Math.round(elapsed)),
     elapsed: formatElapsed(elapsed),
   };
@@ -133,7 +133,7 @@ function buildMarkdown() {
   md += `- **Role:** ${cfg.role || 'not set'}\n`;
   md += `- **Type:** ${cfg.interviewType}\n`;
   md += `- **Difficulty:** ${cfg.difficulty}\n`;
-  md += `- **Duration:** ${cfg.duration ? `${cfg.duration} minute${cfg.duration === 1 ? '' : 's'}` : 'no time limit'}\n`;
+  md += `- **Duration:** ${cfg.duration} minute${cfg.duration === 1 ? '' : 's'}\n`;
   md += `- **Questions:** ${cfg.questions ? `up to ${cfg.questions}` : 'no question limit'}`;
   md += ` (asked: ${state.questionNumber})\n`;
   if (cfg.prompt) md += `- **Seed prompt:** ${cfg.prompt}\n`;

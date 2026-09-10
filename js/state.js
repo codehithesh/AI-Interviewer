@@ -33,7 +33,7 @@ const state = {
     role: '',
     interviewType: 'general',
     difficulty: 'medium',
-    duration: null,       // minutes, or null for no limit (the timer counts up)
+    duration: 60,         // minutes — always set; the header timer counts down from it
     questions: null,      // cap, or null for no limit
     prompt: '',
   },

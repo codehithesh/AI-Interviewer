@@ -63,7 +63,7 @@ const SETTINGS_VIEW_HTML = `
         </div>
         <div class="field">
           <label for="iv-duration">Duration (minutes)</label>
-          <input type="number" id="iv-duration" min="1" step="1" placeholder="No time limit" autocomplete="off">
+          <input type="number" id="iv-duration" min="1" step="1" placeholder="60" autocomplete="off">
         </div>
         <div class="field">
           <label for="iv-questions">Questions</label>

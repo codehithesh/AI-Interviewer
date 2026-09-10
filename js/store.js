@@ -40,8 +40,13 @@ function readJson(name) {
   try { return JSON.parse(localStorage.getItem(name) || 'null'); } catch { return null; }
 }
 
+// How long an interview runs when nothing else is configured. A duration is always
+// in force, so the header timer always counts DOWN and a session can never run
+// unattended — leaving it empty means this, not "unlimited" (js/interview.js).
+const DEFAULT_DURATION_MINUTES = 60;
+
 function defaultInterview() {
-  return { role: '', interviewType: 'general', difficulty: 'medium', duration: null, questions: null, prompt: '' };
+  return { role: '', interviewType: 'general', difficulty: 'medium', duration: DEFAULT_DURATION_MINUTES, questions: null, prompt: '' };
 }
 
 function blankPrefs() {
@@ -77,9 +82,11 @@ function shapePrefs(raw) {
     if (typeof i.role === 'string') p.interview.role = i.role;
     if (INTERVIEW_TYPES.indexOf(i.interviewType) >= 0) p.interview.interviewType = i.interviewType;
     if (DIFFICULTIES.indexOf(i.difficulty) >= 0) p.interview.difficulty = i.difficulty;
-    // an empty field means "no limit", which is null — not 0, and not "0"
+    // A missing or unusable duration falls back to the default length rather than
+    // to "no limit": the timer is a countdown, so it always needs a limit to count
+    // from, and an unset field must not turn an interview into an endless one.
     const d = Number(i.duration);
-    if (Number.isFinite(d) && d > 0) p.interview.duration = Math.floor(d);
+    p.interview.duration = Number.isFinite(d) && d > 0 ? Math.floor(d) : DEFAULT_DURATION_MINUTES;
     const q = Number(i.questions);
     if (Number.isFinite(q) && q > 0) p.interview.questions = Math.floor(q);
     if (typeof i.prompt === 'string') p.interview.prompt = i.prompt;
