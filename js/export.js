@@ -1,8 +1,14 @@
 // ============================================================
 // EXPORT — generated & downloaded in-browser
 // ============================================================
-// The conversation is serialised from the in-memory state only; nothing is
-// uploaded and nothing is stored. The dropdown lives in the chat header.
+// The session is serialised from the in-memory state only; nothing is uploaded and
+// nothing is stored. The dropdown lives in the screen header, and it is enabled
+// whenever the transcript holds at least one turn — so a live session can be saved
+// too, not only a finished one.
+//
+// Phase 5 replaces this with the full §13 shape (configuration in force, elapsed
+// time, endedReason, evaluation, provider/model actually used). What is here now
+// already exports the new turn shape: role + kind + mode + text.
 
 'use strict';
 
@@ -11,7 +17,15 @@ function buildJson() {
   return {
     app: 'AI Interviewer',
     exported_at: new Date().toISOString(),
-    chat: { provider: state.provider, model: prov.model },
+    interview: {
+      provider: state.provider,
+      model: prov.model,
+      config: Object.assign({}, state.config),
+      view: state.view,
+      started_at: state.startedAt ? new Date(state.startedAt).toISOString() : null,
+      finished_at: state.finishedAt ? new Date(state.finishedAt).toISOString() : null,
+      ended_reason: state.endedReason,
+    },
     messages: state.transcript.map((t) => ({
       role: t.role,
       kind: t.kind,

@@ -13,16 +13,31 @@ function cacheEls() {
   Object.assign(els, {
     toastStack: $('toast-stack'),
 
-    // chat
-    chat: $('chat'), chatHint: $('chat-hint'), chatText: $('chat-text'),
-    btnMic: $('btn-mic'), btnSend: $('btn-send'),
+    // the interview screen as a whole — data-state is 'ready' | 'live' | 'done'
+    view: $('im-view'),
+    timer: $('im-timer'),
 
-    // speech bar, directly under the nav bar
+    // transcript + composer
+    transcript: $('im-transcript'), status: $('im-status'), hint: $('im-hint'),
+    imText: $('im-text'),
+    btnPlus: $('im-plus'), btnMic: $('im-mic'), btnCam: $('im-cam'), btnSend: $('im-send'),
+    btnPrimary: $('im-primary'),
+
+    // participants rail
+    wiggle: $('im-wiggle'),
+    candidateTile: $('im-candidate-tile'),
+    video: $('im-video'), initials: $('im-initials'),
+
+    // speech bar, directly under the header
     btnRead: $('btn-read'), btnPause: $('btn-pause'), btnStop: $('btn-stop'),
-    voiceSelect: $('voice-select'), rateSelect: $('rate-select'),
+    voiceSelect: $('voice-select'), rateSelect: $('rate-select'), autoSpeak: $('auto-speak'),
 
-    // export, mounted in the chat header
+    // export, mounted in the header
     exportMenu: $('export-menu'), btnExport: $('btn-export'),
+
+    // code editor popup
+    codeModal: $('im-code-modal'), codeInput: $('im-code'),
+    btnCodeSend: $('im-code-send'), btnCodeClose: $('im-code-close'),
 
     // settings modal
     btnSettings: $('btn-settings'), btnSaveSettings: $('btn-save-settings'), btnCloseSettings: $('btn-close-settings'),

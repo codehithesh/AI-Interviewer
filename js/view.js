@@ -1,7 +1,7 @@
 // ============================================================
 // View mounting
 // ============================================================
-// Each UI view keeps its markup in its own file — js/chat-view.js and
+// Each UI view keeps its markup in its own file — js/interview-view.js and
 // js/settings-view.js — instead of in a shared, ever-growing index.html.
 //
 // Why the markup is carried in a script and not in a fetched .html partial: a

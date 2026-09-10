@@ -6,3 +6,4 @@
 
 # leftover headless-Chrome profile from local testing — never ship this
 .shot-profile/
+IMPL_PLAN.md

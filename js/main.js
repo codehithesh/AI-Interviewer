@@ -4,14 +4,21 @@
 // Loaded last. Everything is declared by now, so this file wires the modules
 // together and starts the app. Listeners are attached synchronously first, so no
 // click can fall through while the saved settings are still being read.
+//
+// The order at the end matters: initSettings() is what loads the saved interview
+// configuration, so the Ready card can only be painted after it resolves — and
+// snapshotConfig() reads from `prefs`, so the two go together.
 
 'use strict';
 
 function wireGlobals() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      // Escape closes the code editor and the Settings modal (§15). The code
+      // editor is closed through its own function so a non-empty draft is kept.
+      if (typeof closeCodeEditor === 'function') closeCodeEditor();
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach((ov) => closeModal(ov));
-      closeExportMenu();
+      if (typeof closeExportMenu === 'function') closeExportMenu();
     }
   });
 }
@@ -28,17 +35,18 @@ async function init() {
   initTTS(updateControls);
   initSTT();
   wireComposer();
-  wireChat();
+  wireInterview();
   wireMarkdown();
   wireExport();
   wireSettings();
 
-  // 3 · saved settings: keys, provider, models, appearance, speech
+  // 3 · saved settings: keys, provider, models, appearance, speech, interview
   await initSettings();
 
-  // 4 · the chat is ready for the first message
-  updateControls();
-  autoGrowComposer();
+  // 4 · the Ready screen reflects the configuration that was just loaded
+  snapshotConfig();
+  setView('ready');
+  renderReadiness();
 }
 
 init();

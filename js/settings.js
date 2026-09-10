@@ -25,9 +25,18 @@ function updateForgetBtn() {
 }
 
 // ---------- provider cards ----------
+// The model control is a free-text <input list> backed by a <datalist>, NOT a
+// <select>. Model IDs get renamed and retired, and a <select> turns a stale ID
+// into a dead end — the user can only pick from a list this app shipped. A
+// datalist still suggests the known IDs while leaving the field typeable, so the
+// fix for a retired model is to type the current one.
 function renderProviderCards() {
   els.providerList.innerHTML = PROVIDERS.map((p) => {
-    const opts = modelOptions(p, draft ? draft.models[p.id] : '');
+    const def = (draft && draft.models[p.id]) || p.def || p.models[0].v;
+    const listId = 'models-' + p.id;
+    const opts = p.models.map((m) =>
+      `<option value="${m.v}">${m.l}</option>`
+    ).join('');
     return `
       <div class="provider-card${p.id === state.provider ? ' active' : ''}" data-provider="${p.id}">
         <div class="pc-head">
@@ -38,7 +47,8 @@ function renderProviderCards() {
         <label for="key-${p.id}">API key</label>
         <input type="password" id="key-${p.id}" placeholder="${p.ph || 'Paste your API key'}" autocomplete="off" spellcheck="false">
         <label for="model-${p.id}">Model</label>
-        <select id="model-${p.id}">${opts}</select>
+        <input type="text" id="model-${p.id}" list="${listId}" value="${def}" spellcheck="false" autocomplete="off" placeholder="Type a current model ID">
+        <datalist id="${listId}">${opts}</datalist>
         ${p.hint ? `<p class="hint">${p.hint}</p>` : ''}
       </div>`;
   }).join('\n');
@@ -54,23 +64,52 @@ function selectProvider(prov) {
 }
 
 // ---------- speech ----------
-// Speech is no longer edited in this modal: the voice and the speed live in the
-// bar under the nav bar, so they take effect — and are stored — the moment they
+// Speech is edited in the bar on the interview screen, not in this modal, so the
+// voice, the speed and auto-speak take effect — and are stored — the moment they
 // change. This paints the bar's controls from whatever is actually in force.
-// autoSpeak has no control of its own and stays on: replies are read aloud as
-// they arrive, and Read replays the newest one.
 function applySpeech() {
   const s = (prefs && prefs.speech) || state.speech;
   state.speech = { voice: s.voice, rate: s.rate, autoSpeak: s.autoSpeak };
   els.voiceSelect.value = state.speech.voice;
   els.rateSelect.value = String(state.speech.rate);
+  els.autoSpeak.checked = state.speech.autoSpeak !== false;
 }
 
-// Store the bar's voice and speed at once — there is no Save step for them.
+// Store the bar's settings at once — there is no Save step for them.
 async function storeSpeech() {
   if (!prefs) prefs = blankPrefs();
   prefs = shapePrefs(Object.assign({}, prefs, { speech: Object.assign({}, state.speech) }));
   await writePrefs(prefs);
+}
+
+// ---------- interview configuration ----------
+// Read the Interview section out of the modal into the draft, so a Save that
+// happens while the fields hold something else does not silently revert them.
+// A blank duration or question count means "no limit", which is null — never 0,
+// which would read as a limit of zero.
+function readInterviewInputs() {
+  const num = (id) => {
+    const v = parseInt($(id).value, 10);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  return {
+    role: $('iv-role').value.trim(),
+    interviewType: $('iv-type').value,
+    difficulty: $('iv-difficulty').value,
+    duration: num('iv-duration'),
+    questions: num('iv-questions'),
+    prompt: $('iv-prompt').value.trim(),
+  };
+}
+
+function paintInterviewInputs(cfg) {
+  const c = cfg || defaultInterview();
+  $('iv-role').value = c.role || '';
+  $('iv-type').value = c.interviewType || 'general';
+  $('iv-difficulty').value = c.difficulty || 'medium';
+  $('iv-duration').value = c.duration || '';
+  $('iv-questions').value = c.questions || '';
+  $('iv-prompt').value = c.prompt || '';
 }
 
 // ---------- draft <-> stored preferences ----------
@@ -81,6 +120,7 @@ function draftFromPrefs() {
     provider: prefs.provider,
     models: Object.assign({}, prefs.models),
     theme: prefs.theme,
+    interview: Object.assign({}, prefs.interview || defaultInterview()),
   };
 }
 
@@ -88,12 +128,13 @@ function applyDraftToInputs() {
   if (!draft) return;
   for (const p of PROVIDERS) {
     providerInput(p.id).value = draft.keys[p.id] || '';
-    const def = draft.models[p.id] || p.def || p.models[0].v;
-    const sel = providerModel(p.id);
-    if (sel && p.models.some((m) => m.v === def)) sel.value = def;
+    // The model field accepts anything the user types, so whatever was saved goes
+    // straight back in — a datalist mismatch must not blank the field.
+    providerModel(p.id).value = draft.models[p.id] || p.def || p.models[0].v;
   }
   selectProvider(draft.provider);
   previewThemePref(draft.theme);
+  paintInterviewInputs(draft.interview);
   updateForgetBtn();
 }
 
@@ -106,19 +147,28 @@ async function saveSettings() {
       dropped += removed;
       if (removed) field.value = key;  // show back exactly what will be stored
       if (key) draft.keys[p.id] = key; else delete draft.keys[p.id];
-      draft.models[p.id] = providerModel(p.id).value;
+      draft.models[p.id] = providerModel(p.id).value.trim();
     }
     draft.provider = state.provider;
     draft.theme = uiThemePref;
+    // The Interview fields are edited in this modal, so read them back out of it
+    // rather than trusting the draft to have tracked every keystroke.
+    draft.interview = readInterviewInputs();
   }
   // Speech is not part of the draft, so carry what the bar currently holds: a Save
-  // from this modal must never reset the chosen voice or speed.
+  // from this modal must never reset the chosen voice, speed or auto-speak.
   prefs = shapePrefs(Object.assign({}, draft || prefs, { speech: Object.assign({}, state.speech) }));
   await writePrefs(prefs);
   draftFromPrefs();
   syncThemePref();
   applySpeech();
   updateForgetBtn();
+  // The Ready card restates the saved configuration, so if the session is not
+  // running it must be repainted with what was just saved.
+  if (state.view === 'ready' && typeof renderReadiness === 'function') {
+    snapshotConfig();
+    renderReadiness();
+  }
   // say so when a key had to be repaired — the alternative is a user staring at
   // an unchanged-looking field wondering why the provider rejected it
   const note = dropped
@@ -175,14 +225,18 @@ function wireSettings() {
     setApiError('');
     updateForgetBtn();
   });
-  // remembering a model choice is part of the draft too
-  els.settingsModal.addEventListener('change', (e) => {
-    if (draft && e.target.matches('select[id^="model-"]')) {
-      draft.models[e.target.id.slice('model-'.length)] = e.target.value;
+  // remembering a model choice is part of the draft too — the field is free text,
+  // so this listens for 'input' as well as 'change' (picking from the datalist
+  // fires 'change', typing fires 'input')
+  const rememberModel = (e) => {
+    if (draft && e.target.matches('input[id^="model-"]')) {
+      draft.models[e.target.id.slice('model-'.length)] = e.target.value.trim();
     }
-  });
+  };
+  els.settingsModal.addEventListener('input', rememberModel);
+  els.settingsModal.addEventListener('change', rememberModel);
 
-  // Speech lives in the bar under the nav bar, not in this modal: a voice or speed
+  // Speech is edited in the bar on the interview screen, not in this modal: a
   // change takes effect and is stored at once, so there is no Save step for it.
   els.voiceSelect.addEventListener('change', () => {
     state.speech.voice = els.voiceSelect.value;
@@ -190,6 +244,14 @@ function wireSettings() {
   });
   els.rateSelect.addEventListener('change', () => {
     state.speech.rate = parseFloat(els.rateSelect.value) || 1;
+    storeSpeech();
+  });
+  els.autoSpeak.addEventListener('change', () => {
+    state.speech.autoSpeak = els.autoSpeak.checked;
+    // Turning it off silences the message being read right now as well as the next
+    // one — otherwise the switch would appear to do nothing until the next turn.
+    if (!state.speech.autoSpeak && typeof stopTTS === 'function') stopTTS();
+    else updateControls();
     storeSpeech();
   });
 
@@ -211,12 +273,12 @@ function wireSettings() {
 
 // Load what was saved, paint it, and render the modal's contents.
 async function initSettings() {
-  prefs = await loadPrefs();  // saved keys + provider + models + theme + speech
+  prefs = await loadPrefs();  // keys + provider + models + theme + speech + interview
   state.provider = prefs.provider;
   state.speech = Object.assign({}, prefs.speech);
-  applySpeech();              // paint the speech bar's voice and speed
+  applySpeech();              // paint the speech bar's voice, speed and auto-speak
   syncThemePref();            // paint the saved appearance
-  renderProviderCards();      // model <option>s use the saved per-provider picks
+  renderProviderCards();      // the model fields use the saved per-provider picks
   draftFromPrefs();
   applyDraftToInputs();       // the modal opens on exactly what is stored
   // The saved voice is in state before the voice list is built, and Chrome fills

@@ -114,6 +114,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .btn.compact { height: 34px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
 /* square icon-only button — label text stays in the tooltip / aria-label */
 .btn.icon-btn { width: 34px; padding: 0; flex: none; }
+/* [END] — the one destructive action on the screen. Coloured by intent, but it
+   also carries its own label, so nothing here relies on colour alone. */
+.btn.danger { background: var(--error); border-color: var(--error); color: #fff; font-weight: 500; }
+.btn.danger:hover:not(:disabled) { filter: brightness(1.08); }
 
 /* ---------- icon glyphs: single-color SVG files tinted via mask ----------
    The glyphs are inlined as data: URIs on purpose. Unlike background-image,
@@ -134,6 +138,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ic-moon     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIxIDEyLjc5QTkgOSAwIDEgMSAxMS4yMSAzIDcgNyAwIDAgMCAyMSAxMi43OXoiLz48L3N2Zz4='); }
 .ic-monitor  { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjIwIiBoZWlnaHQ9IjE0IiByeD0iMiIgcnk9IjIiLz48bGluZSB4MT0iOCIgeTE9IjIxIiB4Mj0iMTYiIHkyPSIyMSIvPjxsaW5lIHgxPSIxMiIgeTE9IjE3IiB4Mj0iMTIiIHkyPSIyMSIvPjwvc3ZnPg=='); }
 .ic-trash    { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMyA2IDUgNiAyMSA2Ii8+PHBhdGggZD0iTTE5IDZ2MTRhMiAyIDAgMCAxLTIgMkg3YTIgMiAwIDAgMS0yLTJWNm0zIDBWNGEyIDIgMCAwIDEgMi0yaDRhMiAyIDAgMCAxIDIgMnYyIi8+PGxpbmUgeDE9IjEwIiB5MT0iMTEiIHgyPSIxMCIgeTI9IjE3Ii8+PGxpbmUgeDE9IjE0IiB5MT0iMTEiIHgyPSIxNCIgeTI9IjE3Ii8+PC9zdmc+'); }
+.ic-cam      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEyIiByeD0iMiIvPjxwYXRoIGQ9Ik0xNSAxMWw3LTR2MTBsLTctNHoiLz48L3N2Zz4='); }
+.ic-plus     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGxpbmUgeDE9IjEyIiB5MT0iNSIgeDI9IjEyIiB5Mj0iMTkiLz48bGluZSB4MT0iNSIgeTE9IjEyIiB4Mj0iMTkiIHkyPSIxMiIvPjwvc3ZnPg=='); }
 .ic-mic      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHJlY3QgeD0iOSIgeT0iMiIgd2lkdGg9IjYiIGhlaWdodD0iMTEiIHJ4PSIzIiBmaWxsPSIjMDAwIiBzdHJva2U9Im5vbmUiLz4KICA8cGF0aCBkPSJNNSAxMWE3IDcgMCAwIDAgMTQgMCIvPgogIDxsaW5lIHgxPSIxMiIgeTE9IjE4IiB4Mj0iMTIiIHkyPSIyMiIvPgo8L3N2Zz4='); }
 .ic-send     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTQgMTJsMTYtOC02IDE2LTMuMi02LjR6Ii8+CiAgPHBhdGggZD0iTTEwLjggMTMuNkwyMCA0Ii8+Cjwvc3ZnPg=='); }
 .ic-download { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTEyIDN2MTIiLz4KICA8cGF0aCBkPSJNNyAxMWw1IDUgNS01Ii8+CiAgPHBhdGggZD0iTTQgMjBoMTYiLz4KPC9zdmc+'); }
@@ -155,53 +161,102 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .seg-btn:not(.active):hover { background: var(--border); color: var(--text); }
 
 label { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-top: 10px; display: block; }
-input[type="password"], input[type="url"], select, textarea {
+input[type="password"], input[type="url"], input[type="text"], input[type="number"], select, textarea {
   width: 100%; background: var(--panel);
   border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;
 }
-input[type="password"], input[type="url"], select { height: 34px; padding: 0 10px; }
+input[type="password"], input[type="url"], input[type="text"], input[type="number"], select { height: 34px; padding: 0 10px; }
 textarea { padding: 8px 10px; line-height: 1.5; resize: vertical; }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
 .hint { font-size: 11.5px; color: var(--text-dim); }
 #api-error { font-size: 12px; color: var(--error); min-height: 14px; margin-top: 6px; }
 
-/* ---------- the chat column: the whole app ---------- */
-.chat-col {
-  flex: 1 1 auto; min-height: 0; min-width: 0;
-  display: flex; flex-direction: column;
-  background: var(--bg);
-}
-.chat-head {
+/* ---------- the interview screen: header over (rail | panel) ----------
+   Three flex levels rather than a grid, because every level has to scroll
+   independently: the header is fixed, the panel's transcript scrolls, and the
+   rail scrolls only if both tiles cannot fit. min-height/min-width: 0 on the
+   flex children is what actually permits that — without it a flex item refuses
+   to shrink below its content and the whole page scrolls instead of the list. */
+.iv { display: flex; flex-direction: column; height: 100vh; }
+.iv-header {
   flex: 0 0 auto; height: 48px; box-sizing: border-box;
   background: var(--panel); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  overflow: visible; /* lets the export menu escape the header */
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  overflow: visible;             /* lets the export menu escape the header */
 }
-.chat-head .head-title {
+.iv-header .head-title {
   font-size: 14px; font-weight: 650; color: var(--text);
   letter-spacing: 0.01em; white-space: nowrap;
 }
-.head-actions { display: flex; align-items: center; gap: 8px; flex: none; }
-.menu-wrap { position: relative; display: inline-flex; }
-.menu {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 70;
-  min-width: 150px; padding: 4px;
-  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: var(--shadow);
-  display: flex; flex-direction: column; gap: 2px;
+.timer {
+  font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--text-dim);
+  padding: 3px 10px; border: 1px solid var(--border); border-radius: 8px;
 }
-.menu-item {
-  display: block; width: 100%; text-align: left;
-  background: none; border: none; color: var(--text);
-  font-size: 13px; padding: 8px 10px; border-radius: 7px; cursor: pointer;
-}
-.menu-item:hover { background: var(--border); }
+/* the last minute before a timed interview ends — the countdown text itself is
+   the primary signal, this only reinforces it */
+.timer.low { color: var(--error); border-color: var(--error); }
 
-/* ---------- speech bar: read aloud, directly under the nav bar ----------
-   Restored from the extension: one always-visible strip holding the voice, the
-   speed and the three transport buttons, so the reading controls are never behind
-   a modal. updateControls() decides what each button may do; the labels come from
-   tts.js. It shares the chat's horizontal measure via the padding rule below. */
+.iv-main { flex: 1 1 auto; min-height: 0; display: flex; }
+
+/* ---------- left rail: the two participants ---------- */
+.iv-rail {
+  flex: 0 0 220px; min-width: 0; display: flex; flex-direction: column;
+  gap: 12px; padding: 14px; overflow-y: auto;
+  background: var(--panel); border-right: 1px solid var(--border);
+}
+.participants { display: flex; flex-direction: column; gap: 12px; }
+.tile {
+  display: flex; flex-direction: column; gap: 6px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--panel-2); padding: 8px;
+}
+.tile-media {
+  position: relative; width: 100%; aspect-ratio: 4 / 3;
+  border-radius: 8px; overflow: hidden;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+}
+.avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* the (...) from the mockup, in the tile corner: decorative and non-interactive */
+.tile-glyph {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim);
+}
+.self-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.initials {
+  font-size: 26px; font-weight: 650; letter-spacing: 0.04em; color: var(--text-dim);
+}
+.tile-foot { display: flex; align-items: center; gap: 8px; min-height: 18px; }
+.tile-name {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- the speaking wiggle ----------
+   Four bars that move only while speechSynthesis is actually speaking, driven by
+   real start/end events rather than a timer — so it cannot animate while the app
+   is silent. [data-speaking] is set by js/participants.js. */
+.wiggle { margin-left: auto; display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+.wiggle i { display: block; width: 3px; height: 4px; border-radius: 2px; background: var(--text-dim); }
+.wiggle[data-speaking="true"] i { background: var(--accent); animation: wiggle 0.9s ease-in-out infinite; }
+.wiggle[data-speaking="true"] i:nth-child(2) { animation-delay: 0.15s; }
+.wiggle[data-speaking="true"] i:nth-child(3) { animation-delay: 0.3s; }
+.wiggle[data-speaking="true"] i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes wiggle { 0%, 100% { height: 4px; } 50% { height: 13px; } }
+
+.rail-action { width: 100%; margin-top: auto; }
+
+/* ---------- right panel: the chat ---------- */
+.iv-panel {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; background: var(--bg);
+}
+
+/* ---------- speech bar: read aloud, directly under the header ----------
+   One always-visible strip holding the voice, the speed, the auto-speak switch and
+   the three transport buttons, so the reading controls are never behind a modal.
+   updateControls() decides what each button may do; the labels come from js/tts.js. */
 .speech-bar {
   flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
   padding: 7px 16px; border-bottom: 1px solid var(--border); background: var(--panel);
@@ -210,29 +265,66 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .speech-bar select { width: auto; }
 #voice-select { flex: 1; min-width: 0; }
 #rate-select { width: 88px; }
+.check { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; cursor: pointer; }
+.check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
 
-.chat {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+/* the status line (§8.3): Speaking / Listening / Thinking / Ready */
+.iv-status { flex: 0 0 auto; padding: 6px 16px 0; }
+.status-text { font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-dim); }
+
+/* ---------- transcript ----------
+   A list, not a div soup: every turn is an <li>, including the readiness card. */
+.transcript {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; list-style: none;
   display: flex; flex-direction: column; gap: 10px;
-  padding-block: 14px 12px;
+  padding: 14px 16px 12px;
   overscroll-behavior: contain;
 }
-.empty-state {
-  color: var(--text-dim); text-align: center; padding: 24px 20px;
-  font-size: 13.5px; line-height: 1.7;
-  margin: auto 0;               /* centred in the empty transcript */
-}
+.turn { display: flex; flex-direction: column; }
+.turn[data-role="user"] { align-items: flex-end; }
 
 /* bubbles */
 .bubble { max-width: 100%; padding: 10px 13px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; word-wrap: break-word; }
-.bubble.user { background: var(--user-bubble); color: var(--user-bubble-text); align-self: flex-end; border-top-right-radius: 4px; max-width: 88%; }
+.bubble.user { background: var(--user-bubble); color: var(--user-bubble-text); border-top-right-radius: 4px; max-width: 88%; }
 .bubble.ai { background: var(--ai-bubble); border: 1px solid var(--border); color: var(--text); align-self: stretch; border-top-left-radius: 4px; }
 .bubble-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; opacity: 0.8; }
 .bubble.user .bubble-header { opacity: 0.9; }
-/* model replies arrive with real line breaks; keep them */
+/* answers arrive with real line breaks; keep them */
 .bubble-body { white-space: pre-wrap; }
 .bubble.ai.error { border-color: var(--error); }
 .bubble.ai.error .bubble-header { color: var(--error); opacity: 1; }
+
+/* code attached from the editor popup — its own turn, never mixed with prose */
+.code-block {
+  margin: 0; padding: 10px 12px; border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px; line-height: 1.5; white-space: pre; overflow-x: auto;
+}
+
+/* ---------- readiness card (the Ready state, in place of a transcript) ---------- */
+.readiness-turn { align-items: stretch; }
+.card {
+  border: 1px solid var(--border); border-radius: 14px; background: var(--ai-bubble);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+}
+.card h2 { font-size: 16px; font-weight: 650; }
+.readiness-lead { font-size: 13.5px; }
+.readiness-list {
+  display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px;
+  font-size: 12.5px; margin: 2px 0;
+}
+.readiness-list dt { color: var(--text-dim); font-weight: 600; }
+.readiness-list dd { margin: 0; }
+.readiness-seed { font-size: 12.5px; color: var(--text-dim); overflow-wrap: anywhere; }
+.card > .btn { align-self: flex-start; margin-top: 2px; }
+
+/* a plain-language notice, used where the spec asks for one instead of an API call */
+.notice {
+  font-size: 12.5px; color: var(--text-dim);
+  border: 1px dashed var(--border); border-radius: 10px; padding: 9px 12px;
+}
+
 /* ---------- markdown, inside a reply bubble ----------
    renderMarkdown() (js/markdown.js) returns real block elements, so the pre-wrap
    above — which is what keeps the line breaks of a message you typed — would put a
@@ -324,13 +416,6 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .bubble-body.md .md-check:hover { border-color: var(--accent); }
 .bubble-body.md .md-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .bubble-body.md .md-check.on { background: var(--accent); border-color: var(--accent); }
-.bubble-body.md .md-check.on::after {
-  content: ""; display: block; width: 3px; height: 6.5px; margin: 0 auto;
-  border: solid var(--bg); border-width: 0 1.5px 1.5px 0;
-  transform: translateY(-0.5px) rotate(45deg);
-}
-/* A ticked item reads as done without hiding its words. */
-.bubble-body.md ul.md-tasks > li:has(.md-check.on) { color: var(--text-dim); }
 
 .thinking-row { display: flex; align-items: center; color: var(--text-dim); font-size: 13px; }
 .tag { display: inline-block; background: rgba(0,0,0,0.25); padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
@@ -338,25 +423,22 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; flex: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* composer — one row: growing input + mic + send */
+/* ---------- composer — one row: growing input + [+] [Mic] [Cam] [>] ---------- */
 .composer {
   flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--panel);
-  padding-block: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px;
 }
-#chat-hint { font-size: 11.5px; }
+#im-hint { font-size: 11.5px; }
 .composer-row { display: flex; align-items: flex-end; gap: 8px; }
-#chat-text {
+#im-text {
   flex: 1 1 auto; min-width: 0; resize: none; overflow-y: hidden;
   min-height: 34px; max-height: 140px;
 }
-#chat-text.grown { overflow-y: auto; }
-#btn-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; }
+#im-text.grown { overflow-y: auto; }
+#im-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
 /* while recording the button widens to show the state next to the mic glyph */
 .rec-label { display: none; font-size: 12.5px; font-weight: 600; }
-#btn-mic.listening { width: auto; padding: 0 12px; }
-#btn-mic.listening .rec-label { display: inline; }
-
 /* ---------- modals ---------- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
@@ -445,28 +527,74 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
    it the calc() goes negative and max() falls back to the original padding — so
    phones keep today's edge-to-edge look and there is no breakpoint to keep in
    sync. */
-.chat-head,
+.transcript,
 .speech-bar,
-.chat,
+.iv-status,
 .composer { padding-inline: max(16px, calc((100% - var(--chat-max)) / 2)); }
 
-/* narrow: the settings modal goes full screen */
+/* ---------- the code editor popup ----------
+   A plain monospace textarea. Not a permanent panel, not a code editor library:
+   it opens from the composer's [+], keeps its draft while closed, and [>] sends
+   the code as its own message. */
+.code-modal { width: min(820px, 100%); height: min(640px, calc(100vh - 40px)); }
+.code-body { padding: 14px 18px 18px; }
+.code-input {
+  flex: 1 1 auto; min-height: 0; width: 100%; resize: none;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.55; tab-size: 2; white-space: pre;
+  overflow: auto;
+}
+
+/* ---------- generic form rows, and one utility ---------- */
+.field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }
+.field { display: flex; flex-direction: column; }
+.field input, .field select, .field textarea { width: 100%; }
+/* Visible to a screen reader, out of the visual layout — used for the label on
+   the code editor, which has a heading already but still needs an accessible name. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Narrow: the settings modal goes full screen, and the rail becomes a horizontal
+   strip of tiles ABOVE the chat rather than disappearing — so both participants
+   stay reachable on a phone. */
 @media (max-width: 1000px) {
   .modal-overlay { padding: 0; align-items: stretch; }
   .modal {
     width: 100%; height: 100%; max-height: none;
     border-radius: 0; border: none; box-shadow: none;
   }
+  .iv-main { flex-direction: column; }
+  .iv-rail {
+    flex: 0 0 auto; overflow-x: auto; overflow-y: hidden;
+    padding: 10px 12px; border-right: none; border-bottom: 1px solid var(--border);
+  }
+  .participants { flex-direction: row; }
+  .tile { flex: 1 1 0; min-width: 150px; }
+  .rail-action { margin-top: 0; }
 }
 
-/* narrow phones: tighter chat padding, and the speech bar wraps rather than
-   squeezing the voice list down to nothing */
+/* narrow phones: tighter padding, and the speech bar wraps rather than squeezing
+   the voice list down to nothing */
 @media (max-width: 600px) {
-  .chat,
-  .chat-head,
+  .transcript,
   .speech-bar,
-  .composer { padding-inline: 14px; }
+  .iv-status,
+  .composer,
+  .iv-header { padding-inline: 14px; }
   .bubble.user { max-width: 94%; }
   .speech-bar { flex-wrap: wrap; }
   #voice-select { flex: 1 1 140px; }
+  .iv-header { gap: 8px; }
+  .timer { font-size: 13px; padding: 3px 7px; }
+}
+
+/* Motion is decoration here: the speaking state is also carried by the status
+   line, which says "Interviewer speaking…". Preferring reduced motion replaces
+   the wiggle with a static state indicator rather than removing the signal. */
+@media (prefers-reduced-motion: reduce) {
+  .wiggle[data-speaking="true"] i { animation: none; height: 13px; background: var(--accent); }
+  .loader { animation: none; }
+  #im-mic.listening { animation: none; }
 }

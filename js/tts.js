@@ -2,8 +2,9 @@
 // TEXT-TO-SPEECH — replies read aloud (native, no API)
 // ============================================================
 // Built entirely on window.speechSynthesis with the OS voices: nothing is
-// uploaded and no speech service is involved. Voice and rate are chosen in the
-// Settings modal (js/settings.js); the words come from the chat (js/chat.js).
+// uploaded and no speech service is involved. Voice, rate and auto-speak are
+// chosen in the speech bar (js/settings.js stores them); the words come from the
+// interview screen (js/interview.js).
 
 'use strict';
 

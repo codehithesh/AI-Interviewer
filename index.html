@@ -23,8 +23,9 @@
          and never reaches a window 'error' handler at all.
      Opening this file directly (file://) is the most common cause of the first
      one: some browsers refuse to read sibling files for a local page. Serve the
-     directory over http://localhost instead — the microphone and camera need a
-     secure context anyway, which file:// is not.
+     directory over http://localhost instead. The microphone and the camera
+     require a secure context, which file:// is not — and Chrome's speech
+     recognition does not exist there either.
      ============================================================ -->
 <script>
 (function () {
@@ -57,8 +58,8 @@
   });
   window.addEventListener('load', function () {
     setTimeout(function () {
-      if (document.querySelector('[data-view="chat"]')) {
-        fail('the interface did not mount (js/chat-view.js did not run)');
+      if (document.querySelector('[data-view="interview"]')) {
+        fail('the interface did not mount (js/interview-view.js did not run)');
       }
     }, 500);
   });
@@ -67,10 +68,11 @@
 
 <div class="app">
 
-  <!-- The chat is the whole app. Its markup lives in js/chat-view.js — a page
-       opened over file:// may not read other local files, so each view carries
-       its markup in its own script and mounts it before any behaviour is wired. -->
-  <div data-view="chat"></div>
+  <!-- The interview screen is the whole app. Its markup lives in
+       js/interview-view.js — a page opened over file:// may not read other local
+       files, so each view carries its markup in its own script and mounts it
+       before any behaviour is wired. -->
+  <div data-view="interview"></div>
 
   <!-- ===================== TOAST STACK (bottom-left; each dismissed by hand) ===================== -->
   <div id="toast-stack" class="toast-stack" role="status" aria-live="polite"></div>
@@ -81,16 +83,16 @@
 
 <!-- ============================================================
      Plain scripts, loaded in dependency order — deliberately NOT ES modules:
-     module scripts and fetch() of local files are both blocked on file://, and
-     index.html must keep working when opened straight from disk.
+     module scripts are blocked on file://, and index.html is meant to keep
+     working when opened straight from disk.
      ============================================================ -->
 
 <!-- 1 · view markup, mounted into the mount points above -->
 <script src="js/view.js"></script>
-<script src="js/chat-view.js"></script>
+<script src="js/interview-view.js"></script>
 <script src="js/settings-view.js"></script>
 
-<!-- 2 · foundation: state, helpers, markdown, element cache -->
+<!-- 2 · foundation: state, helpers, markdown, element cache, appearance -->
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/markdown.js"></script>
@@ -109,9 +111,9 @@
 <script src="js/store.js"></script>
 <script src="js/settings.js"></script>
 
-<!-- 6 · composer, chat, export -->
+<!-- 6 · composer, the interview screen, export -->
 <script src="js/composer.js"></script>
-<script src="js/chat.js"></script>
+<script src="js/interview.js"></script>
 <script src="js/export.js"></script>
 
 <!-- 7 · boot -->

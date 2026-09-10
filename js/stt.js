@@ -53,7 +53,7 @@ function joinSpeech(a, b) { return (a + ' ' + b).replace(/\s+/g, ' ').trim(); }
 // recBase is what the composer held before recording began, so dictation appends
 // to whatever was already typed rather than replacing it.
 function paintTranscript() {
-  els.chatText.value = joinSpeech(state.recBase, joinSpeech(committed, sessionText));
+  els.imText.value = joinSpeech(state.recBase, joinSpeech(committed, sessionText));
   autoGrowComposer();
   updateControls();
 }
@@ -113,10 +113,11 @@ function toggleListening() {
   if (!recognition) return;
   if (state.listening) { stopListening(); return; }
   // A reply being read aloud and a live microphone are mutually exclusive — the
-  // recogniser would transcribe the AI's own voice.
-  if (state.busy || state.speaking) return;
+  // recogniser would transcribe the interviewer's own voice. Nothing but a live
+  // interview may open the microphone at all.
+  if (state.view !== 'live' || state.busy || state.speaking) return;
 
-  state.recBase = els.chatText.value.trim();
+  state.recBase = els.imText.value.trim();
   committed = '';
   sessionText = '';
   restartFails = 0;

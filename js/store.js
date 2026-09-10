@@ -26,10 +26,13 @@ const STORE = {
   models: 'rlModels',
   theme: 'rlTheme',
   speech: 'rlSpeech',
+  interview: 'rlInterview',
 };
 
 const THEMES = ['system', 'light', 'dark'];
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const INTERVIEW_TYPES = ['technical', 'behavioral', 'general'];
+const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 // A hand-edited or half-written entry must not take the other preferences down
 // with it, so each value is parsed on its own.
@@ -37,10 +40,15 @@ function readJson(name) {
   try { return JSON.parse(localStorage.getItem(name) || 'null'); } catch { return null; }
 }
 
+function defaultInterview() {
+  return { role: '', interviewType: 'general', difficulty: 'medium', duration: null, questions: null, prompt: '' };
+}
+
 function blankPrefs() {
   return {
     keys: {}, provider: state.provider, models: {}, theme: 'system',
     speech: { voice: '', rate: 1, autoSpeak: true },
+    interview: defaultInterview(),
   };
 }
 
@@ -64,6 +72,18 @@ function shapePrefs(raw) {
     }
   }
   if (THEMES.indexOf(raw.theme) >= 0) p.theme = raw.theme;
+  if (raw.interview && typeof raw.interview === 'object') {
+    const i = raw.interview;
+    if (typeof i.role === 'string') p.interview.role = i.role;
+    if (INTERVIEW_TYPES.indexOf(i.interviewType) >= 0) p.interview.interviewType = i.interviewType;
+    if (DIFFICULTIES.indexOf(i.difficulty) >= 0) p.interview.difficulty = i.difficulty;
+    // an empty field means "no limit", which is null — not 0, and not "0"
+    const d = Number(i.duration);
+    if (Number.isFinite(d) && d > 0) p.interview.duration = Math.floor(d);
+    const q = Number(i.questions);
+    if (Number.isFinite(q) && q > 0) p.interview.questions = Math.floor(q);
+    if (typeof i.prompt === 'string') p.interview.prompt = i.prompt;
+  }
   if (raw.speech && typeof raw.speech === 'object') {
     if (typeof raw.speech.voice === 'string') p.speech.voice = raw.speech.voice;
     const r = Number(raw.speech.rate);
@@ -82,6 +102,7 @@ async function loadPrefs() {
       models: readJson(STORE.models),
       theme: localStorage.getItem(STORE.theme) || undefined,
       speech: readJson(STORE.speech),
+      interview: readJson(STORE.interview),
     };
   } catch { raw = {}; }
   return shapePrefs({
@@ -90,6 +111,7 @@ async function loadPrefs() {
     models: raw.models,
     theme: raw.theme,
     speech: raw.speech,
+    interview: raw.interview,
   });
 }
 
@@ -100,6 +122,7 @@ async function writePrefs(p) {
     localStorage.setItem(STORE.provider, p.provider);
     localStorage.setItem(STORE.theme, p.theme);
     localStorage.setItem(STORE.speech, JSON.stringify(p.speech));
+    localStorage.setItem(STORE.interview, JSON.stringify(p.interview));
     if (models) localStorage.setItem(STORE.models, JSON.stringify(models));
     else localStorage.removeItem(STORE.models);
     if (keys) localStorage.setItem(STORE.keys, JSON.stringify(keys));
