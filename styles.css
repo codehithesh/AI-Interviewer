@@ -294,7 +294,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
 
 /* the status line (§8.3): Speaking / Listening / Thinking / Ready */
-.iv-status { flex: 0 0 auto; padding: 6px 16px 0; }
+.iv-status { flex: 0 0 auto; padding: 4px 16px 4px 4px; }
 .status-text { font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-dim); }
 
 /* ---------- transcript ----------
@@ -455,15 +455,22 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 /* ---------- composer — one row: [+] [Mic] growing input [>] ----------
    [Cam] is deliberately not here: it lives in the rail beside the session button,
    because the self-view is local and stays live on every screen state. [>] is the
-   only control to the right of the field, so the row ends where the answer does. */
+   only control to the right of the field, so the row ends where the answer does.
+
+   Every control on this row is exactly 34px tall and centred on the same line. The
+   field is no exception, which is why its height is pinned here instead of being
+   left to rows="1" and its own padding: 20px line-height + 12px padding + the 2px
+   border is 34, the same as .btn. autoGrowComposer() (js/composer.js) keeps that
+   arithmetic true as the field grows. */
 .composer {
   flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--panel);
   padding: 10px 16px 12px;
 }
-.composer-row { display: flex; align-items: flex-end; gap: 8px; }
+.composer-row { display: flex; align-items: center; gap: 8px; }
 #im-text {
   flex: 1 1 auto; min-width: 0; resize: none; overflow-y: hidden;
-  min-height: 34px; max-height: 140px;
+  height: 34px; min-height: 34px; max-height: 140px;
+  padding: 6px 10px; line-height: 20px;
 }
 #im-text.grown { overflow-y: auto; }
 #im-mic.listening { background: var(--record); color: #fff; border-color: var(--record); animation: pulse 1.4s infinite; }

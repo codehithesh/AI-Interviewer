@@ -30,12 +30,18 @@ function composerInert() {
 }
 
 // Starts as a single-line field, grows as the text wraps, and scrolls once it
-// hits the CSS max-height.
+// hits the CSS max-height. One line is exactly 34px — the height of every button
+// beside it — so the row stays flush; see the composer rules in styles.css.
 function autoGrowComposer() {
   const ta = els.imText;
-  const max = parseFloat(getComputedStyle(ta).maxHeight) || 140;
+  const cs = getComputedStyle(ta);
+  const max = parseFloat(cs.maxHeight) || 140;
+  // scrollHeight is content + padding and stops at the border, while the field is
+  // border-box: without adding the border back the box is set 2px short of its own
+  // content on every line, which makes it scroll by a sliver as you type.
+  const border = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
   ta.style.height = 'auto';               // measure the natural content height
-  const h = ta.scrollHeight;
+  const h = ta.scrollHeight + border;
   ta.style.height = h + 'px';             // CSS max-height clamps the grown box
   ta.classList.toggle('grown', h > max + 1);
 }

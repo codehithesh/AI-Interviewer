@@ -113,7 +113,12 @@ const INTERVIEW_VIEW_HTML = `
         </label>
       </div>
 
-      <!-- The status line (§8.3): Speaking / Listening / Thinking / Ready. It is the
+      <!-- A list, not a div soup: the transcript is an ordered sequence of turns.
+           role="log" + aria-live announces each new interviewer message as it
+           lands, without moving focus off the composer. -->
+      <ol id="im-transcript" class="transcript" role="log" aria-live="polite" aria-label="Interview transcript"></ol>
+
+       <!-- The status line (§8.3): Speaking / Listening / Thinking / Ready. It is the
            one always-visible readout of the activity state, and it is text, so the
            state is never communicated by colour alone. The wording that used to sit
            above the composer as a second copy of this is a toast now — see setView()
@@ -121,11 +126,6 @@ const INTERVIEW_VIEW_HTML = `
       <div class="iv-status">
         <span id="im-status" class="status-text" role="status" aria-live="polite">Ready</span>
       </div>
-
-      <!-- A list, not a div soup: the transcript is an ordered sequence of turns.
-           role="log" + aria-live announces each new interviewer message as it
-           lands, without moving focus off the composer. -->
-      <ol id="im-transcript" class="transcript" role="log" aria-live="polite" aria-label="Interview transcript"></ol>
 
       <!-- ===================== COMPOSER =====================
            One row, in reading order: the two tools that put something INTO the
