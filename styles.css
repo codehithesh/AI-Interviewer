@@ -114,6 +114,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .btn.compact { height: 34px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
 /* square icon-only button — label text stays in the tooltip / aria-label */
 .btn.icon-btn { width: 34px; padding: 0; flex: none; }
+/* [Cam] while the self-view is live. The state IS the aria attribute, so the
+   styling cannot drift from what a screen reader is told, and the icon (tinted by
+   currentColor through its mask) changes with the label rather than alongside it. */
+.btn.icon-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 /* [END] — the one destructive action on the screen. Coloured by intent, but it
    also carries its own label, so nothing here relies on colour alone. */
 .btn.danger { background: var(--error); border-color: var(--error); color: #fff; font-weight: 500; }

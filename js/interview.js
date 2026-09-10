@@ -357,12 +357,17 @@ function endInterview(reason) {
   state.finishedAt = Date.now();
   stopTimer();
 
-  // Speech is cancelled and recognition stopped on every path out of the
-  // interview; the camera tracks are stopped because a finished session with a
-  // live camera is a light the user did not ask to keep on.
+  // Speech is cancelled, recognition stopped and the camera released on every path
+  // out of the interview: a finished session with a live camera is a light the user
+  // did not ask to keep on. [Cam] itself stays available on the Done screen, so the
+  // self-view can be switched straight back on.
   if (typeof stopTTS === 'function') stopTTS();
   if (typeof discardDictation === 'function') discardDictation();
   else if (typeof stopListening === 'function') stopListening();
+  if (typeof stopCamera === 'function') stopCamera();
+  // The code popup can outlive the interview — the countdown can expire while it is
+  // open — and Done's composer takes no input, so it closes with its draft kept.
+  if (typeof closeCodeEditor === 'function') closeCodeEditor();
 
   setView('done');
   paintTimer();
@@ -387,6 +392,11 @@ function resetSession() {
   if (typeof discardDictation === 'function') discardDictation();
   else if (typeof stopListening === 'function') stopListening();
   if (typeof stopCamera === 'function') stopCamera();
+  // The popup and its draft go with the session: the composer is emptied just
+  // below, and code kept from a finished interview would otherwise reappear under
+  // the next one. closeCodeEditor() saves the draft first, so it is cleared after.
+  if (typeof closeCodeEditor === 'function') closeCodeEditor();
+  state.codeDraft = '';
 
   // A reply still in flight belongs to the session that is being thrown away.
   sessionId += 1;

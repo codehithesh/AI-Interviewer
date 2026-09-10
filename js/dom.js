@@ -25,7 +25,7 @@ function cacheEls() {
 
     // participants rail
     wiggle: $('im-wiggle'),
-    candidateTile: $('im-candidate-tile'),
+    candidateTile: $('im-candidate-tile'), candidateName: $('im-candidate-name'),
     video: $('im-video'), initials: $('im-initials'),
 
     // speech bar, directly under the header
@@ -35,9 +35,9 @@ function cacheEls() {
     // export, mounted in the header
     exportMenu: $('export-menu'), btnExport: $('btn-export'),
 
-    // code editor popup
+    // code editor popup — it INSERTS into the composer, it does not send (js/code-editor.js)
     codeModal: $('im-code-modal'), codeInput: $('im-code'),
-    btnCodeSend: $('im-code-send'), btnCodeClose: $('im-code-close'),
+    btnCodeInsert: $('im-code-insert'), btnCodeClose: $('im-code-close'),
 
     // settings modal
     btnSettings: $('btn-settings'), btnSaveSettings: $('btn-save-settings'), btnCloseSettings: $('btn-close-settings'),

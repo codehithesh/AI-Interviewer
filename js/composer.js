@@ -75,7 +75,9 @@ function updateControls() {
 
   // [Cam] is the one control that stays live on every screen state, including
   // Ready and Done: the camera is a local self-view, not part of the interview.
-  els.btnCam.disabled = false;
+  // When this browser has no getUserMedia at all the button is disabled for good
+  // (set once by initParticipants), so only touch it when a camera is possible.
+  if (cameraSupported()) els.btnCam.disabled = false;
 
   // ---------- the rail's single action button ----------
   // [Start interview] is guarded against a double press, but [END] is NOT disabled

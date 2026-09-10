@@ -6,10 +6,10 @@
 // Which module owns which region:
 //
 //   header      — title, timer, [Settings]      → js/interview.js
-//   rail        — AI tile + candidate tile       → js/participants.js (phase 3)
+//   rail        — AI tile + candidate tile       → js/participants.js
 //   transcript  — bubbles + readiness card       → js/interview.js
 //   composer    — text, [+], [Mic], [Cam], [>]   → js/composer.js
-//   code popup  — monospace textarea             → js/code-editor.js (phase 4)
+//   code popup  — monospace textarea             → js/code-editor.js
 //
 // Every control is disabled in the markup and then enabled by updateControls():
 // the screen boots into Ready, where the composer is deliberately inert, so a
@@ -138,20 +138,21 @@ const INTERVIEW_VIEW_HTML = `
 
 <!-- ===================== CODE EDITOR POPUP =====================
      A plain monospace <textarea> — no CodeMirror, no Monaco, no CDN. Opened by
-     the composer's [+]. [>] here sends the code as its own chat message; prose is
-     sent from the composer, and the two are never combined into one message. -->
+     the composer's [+]. [Insert into answer] does NOT send: it drops the draft
+     into the composer as a fenced code block and closes, so prose and code leave
+     as one answer. That overrides §5 — see js/code-editor.js for why. -->
 <div id="im-code-modal" class="modal-overlay hidden">
   <div class="modal code-modal" role="dialog" aria-modal="true" aria-labelledby="im-code-title">
     <div class="modal-head">
       <h3 id="im-code-title">Code</h3>
       <div class="head-actions">
-        <button id="im-code-send" class="btn primary" title="Send this code as its own message"><span class="ic ic-send" aria-hidden="true"></span>Send code</button>
-        <button id="im-code-close" class="btn icon-btn" title="Close the code editor" aria-label="Close the code editor">✕</button>
+        <button id="im-code-insert" class="btn primary" title="Add this code to your answer as a code block" disabled>Insert into answer</button>
+        <button id="im-code-close" class="btn icon-btn" title="Close the code editor, keeping the draft" aria-label="Close the code editor, keeping the draft">✕</button>
       </div>
     </div>
     <div class="modal-body code-body">
-      <label class="sr-only" for="im-code">Code to attach</label>
-      <textarea id="im-code" class="code-input" spellcheck="false" autocomplete="off" placeholder="Paste or type code here — it is sent as its own message."></textarea>
+      <label class="sr-only" for="im-code">Code to add to your answer</label>
+      <textarea id="im-code" class="code-input" spellcheck="false" autocomplete="off" placeholder="Paste or type code here — [Insert into answer] adds it to your answer as a code block."></textarea>
     </div>
   </div>
 </div>

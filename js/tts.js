@@ -10,20 +10,26 @@
 
 const synth = window.speechSynthesis || null;
 
-// Called whenever the speaking state flips, so the composer can re-decide what
-// the user is allowed to do without polling.
-let onSpeakingChange = null;
+// Everything that has to redraw when the speaking state flips registers here: the
+// composer, which decides whether the microphone may be live (§8.3), and the
+// participants rail, whose wiggle must move only while there is real speech (§6).
+// Two different modules, so it is a list rather than a single callback.
+const speakingListeners = [];
+
+function addSpeakingListener(fn) {
+  if (typeof fn === 'function' && speakingListeners.indexOf(fn) < 0) speakingListeners.push(fn);
+}
 
 // Pausing and resuming flip no top-level flag that setSpeaking() watches, so the
-// transport asks for a control refresh explicitly through this.
-function notifyControls() {
-  if (typeof onSpeakingChange === 'function') onSpeakingChange();
+// transport asks for a refresh explicitly through this.
+function notifySpeakingChange() {
+  speakingListeners.forEach((fn) => fn());
 }
 
 function setSpeaking(v) {
   if (state.speaking === v) return;
   state.speaking = v;
-  notifyControls();
+  notifySpeakingChange();
 }
 
 // Whether this browser can speak at all — without it the transport bar stays hidden.
@@ -139,14 +145,14 @@ function pauseTTS() {
   if (!synth || !state.tts.active || state.tts.paused) return;
   try { synth.pause(); } catch { return; }
   state.tts.paused = true;
-  notifyControls();
+  notifySpeakingChange();
 }
 
 function resumeTTS() {
   if (!synth || !state.tts.active || !state.tts.paused) return;
   try { synth.resume(); } catch { return; }
   state.tts.paused = false;
-  notifyControls();
+  notifySpeakingChange();
 }
 
 function togglePauseTTS() {
@@ -180,7 +186,7 @@ function speakLatestReply() {
 
 // ---------- wiring ----------
 function initTTS(onState) {
-  onSpeakingChange = onState;
+  addSpeakingListener(onState);
 
   // The speech bar is wired before the capability check so the buttons never end
   // up as dead listeners; updateControls() keeps them disabled when there is no synth.
