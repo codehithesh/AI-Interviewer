@@ -5,11 +5,11 @@
 // mountView() call at the bottom of this file. Behaviour lives in js/interview.js.
 // Which module owns which region:
 //
-//   header      — title, timer, [Settings]      → js/interview.js
-//   rail        — AI tile + candidate tile       → js/participants.js
-//   transcript  — bubbles + readiness card       → js/interview.js
-//   composer    — text, [+], [Mic], [Cam], [>]   → js/composer.js
-//   code popup  — monospace textarea             → js/code-editor.js
+//   header      — title, timer, [Export], [Settings]  → js/export.js, js/interview.js
+//   rail        — AI tile + candidate tile + [Cam]    → js/participants.js
+//   transcript  — bubbles + readiness card            → js/interview.js
+//   composer    — [+], [Mic], text, [>]               → js/composer.js
+//   code popup  — monospace textarea                  → js/code-editor.js
 //
 // Every control is disabled in the markup and then enabled by updateControls():
 // the screen boots into Ready, where the composer is deliberately inert, so a
@@ -75,8 +75,14 @@ const INTERVIEW_VIEW_HTML = `
       </div>
 
       <!-- Ready → [Start interview]; Live → [END]; Done → [Restart]. One button
-           with three labels: it is always the thing that moves the session on. -->
-      <button id="im-primary" class="btn primary rail-action" title="Start the interview">Start interview</button>
+           with three labels: it is always the thing that moves the session on.
+           [Cam] sits beside it rather than in the composer because it is not part
+           of the interview at all: the self-view is local, so it stays live on all
+           three screens (see js/composer.js). -->
+      <div class="rail-actions">
+        <button id="im-primary" class="btn primary rail-action" title="Start the interview">Start interview</button>
+        <button id="im-cam" class="btn icon-btn" title="Turn your camera on" aria-label="Toggle your camera" aria-pressed="false"><span class="ic ic-cam" aria-hidden="true"></span></button>
+      </div>
     </aside>
 
     <!-- ===================== RIGHT PANEL: chat ===================== -->
@@ -98,19 +104,20 @@ const INTERVIEW_VIEW_HTML = `
           <option value="1.5">1.5×</option>
           <option value="2">2×</option>
         </select>
+        <button id="btn-read" class="btn compact" title="Read the latest message aloud" disabled><span class="ic ic-play" aria-hidden="true"></span>Read</button>
+        <button id="btn-pause" class="btn compact" title="Pause" disabled><span class="ic ic-pause" aria-hidden="true"></span>Pause</button>
+        <button id="btn-stop" class="btn compact" title="Stop" disabled><span class="ic ic-stop" aria-hidden="true"></span>Stop</button>
         <label class="check" for="auto-speak" title="Speak every interviewer message as it arrives">
           <input type="checkbox" id="auto-speak" checked>
           <span>Auto-speak</span>
         </label>
-        <button id="btn-read" class="btn compact" title="Read the latest message aloud" disabled><span class="ic ic-play" aria-hidden="true"></span>Read</button>
-        <button id="btn-pause" class="btn compact" title="Pause" disabled><span class="ic ic-pause" aria-hidden="true"></span>Pause</button>
-        <button id="btn-stop" class="btn compact" title="Stop" disabled><span class="ic ic-stop" aria-hidden="true"></span>Stop</button>
       </div>
 
-      <!-- The hint line and the status line say the same thing in two places on
-           purpose: the hint sits with the composer the user is typing into, the
-           status line stays visible next to the transcript. Both are text, so the
-           state is never communicated by colour alone. -->
+      <!-- The status line (§8.3): Speaking / Listening / Thinking / Ready. It is the
+           one always-visible readout of the activity state, and it is text, so the
+           state is never communicated by colour alone. The wording that used to sit
+           above the composer as a second copy of this is a toast now — see setView()
+           in js/interview.js. -->
       <div class="iv-status">
         <span id="im-status" class="status-text" role="status" aria-live="polite">Ready</span>
       </div>
@@ -120,14 +127,17 @@ const INTERVIEW_VIEW_HTML = `
            lands, without moving focus off the composer. -->
       <ol id="im-transcript" class="transcript" role="log" aria-live="polite" aria-label="Interview transcript"></ol>
 
-      <!-- ===================== COMPOSER ===================== -->
+      <!-- ===================== COMPOSER =====================
+           One row, in reading order: the two tools that put something INTO the
+           answer, then the answer itself, then the one thing that sends it. [+] and
+           [Mic] are on the left so [>] is the only control to the right of the
+           field — the end of the line, where the eye already is when the typing
+           stops. -->
       <div class="composer">
-        <div id="im-hint" class="dim">Ready</div>
         <div class="composer-row">
-          <textarea id="im-text" rows="1" placeholder="Type or speak…" aria-label="Your answer" disabled></textarea>
           <button id="im-plus" class="btn icon-btn" title="Attach code" aria-label="Open the code editor" aria-haspopup="dialog" disabled><span class="ic ic-plus" aria-hidden="true"></span></button>
           <button id="im-mic" class="btn icon-btn" title="Native speech-to-text" aria-label="Dictate your answer" disabled><span class="ic ic-mic" aria-hidden="true"></span><span class="rec-label">Recording</span></button>
-          <button id="im-cam" class="btn icon-btn" title="Turn your camera on" aria-label="Toggle your camera" aria-pressed="false"><span class="ic ic-cam" aria-hidden="true"></span></button>
+          <textarea id="im-text" rows="1" placeholder="Type or speak…" aria-label="Your answer" disabled></textarea>
           <button id="im-send" class="btn primary icon-btn" title="Send" aria-label="Send your answer" disabled><span class="ic ic-send" aria-hidden="true"></span></button>
         </div>
       </div>

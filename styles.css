@@ -201,6 +201,27 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
    the primary signal, this only reinforces it */
 .timer.low { color: var(--error); border-color: var(--error); }
 
+/* Header buttons, and the settings modal's — one flex row. Without this the
+   buttons are block siblings and each takes its own line, which pushed [Export]
+   above [Settings] and out through the top of the 48px header. */
+.head-actions { display: flex; align-items: center; gap: 8px; }
+/* [Export]'s dropdown is positioned from its trigger, so the wrapper is the
+   containing block rather than the header. */
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  min-width: 150px; padding: 4px;
+  display: flex; flex-direction: column;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+/* .hidden carries !important, so it still beats the display:flex above */
+.menu-item {
+  padding: 8px 10px; border: none; border-radius: 7px; cursor: pointer;
+  background: none; color: var(--text); font-size: 13px; text-align: left;
+}
+.menu-item:hover { background: var(--border); }
+
 .iv-main { flex: 1 1 auto; min-height: 0; display: flex; }
 
 /* ---------- left rail: the two participants ---------- */
@@ -246,7 +267,10 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .wiggle[data-speaking="true"] i:nth-child(4) { animation-delay: 0.45s; }
 @keyframes wiggle { 0%, 100% { height: 4px; } 50% { height: 13px; } }
 
-.rail-action { width: 100%; margin-top: auto; }
+/* The session button and [Cam], pinned to the bottom of the rail. The button takes
+   the width that is left; [Cam] keeps its 34px square beside it. */
+.rail-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.rail-action { flex: 1 1 auto; min-width: 0; }
 
 /* ---------- right panel: the chat ---------- */
 .iv-panel {
@@ -428,12 +452,14 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; flex: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- composer — one row: growing input + [+] [Mic] [Cam] [>] ---------- */
+/* ---------- composer — one row: [+] [Mic] growing input [>] ----------
+   [Cam] is deliberately not here: it lives in the rail beside the session button,
+   because the self-view is local and stays live on every screen state. [>] is the
+   only control to the right of the field, so the row ends where the answer does. */
 .composer {
   flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--panel);
-  padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 16px 12px;
 }
-#im-hint { font-size: 11.5px; }
 .composer-row { display: flex; align-items: flex-end; gap: 8px; }
 #im-text {
   flex: 1 1 auto; min-width: 0; resize: none; overflow-y: hidden;
@@ -577,7 +603,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   }
   .participants { flex-direction: row; }
   .tile { flex: 1 1 0; min-width: 150px; }
-  .rail-action { margin-top: 0; }
+  .rail-actions { margin-top: 0; }
 }
 
 /* narrow phones: tighter padding, and the speech bar wraps rather than squeezing

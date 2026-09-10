@@ -290,10 +290,22 @@ function stopTimer() {
 // Screen state
 // ============================================================
 
+// The Ready and Done nudges that used to sit in a hint line above the composer are
+// toasts now, and they are posted HERE rather than in updateControls(): that runs on
+// every activity change, so a screen state that merely persisted would re-post its
+// own message for as long as it lasted. A transition is what a click produces —
+// [Restart] and [END] — so a transition is what these belong to. Boot sets 'ready'
+// over the 'ready' state.js already holds, which the guard below makes a no-op: the
+// readiness card explains itself, and a toast repeating it on load would be noise.
+// The live activity state is not lost — the §8.3 status line carries it continuously.
 function setView(next) {
+  const changed = state.view !== next;
   state.view = next;
   els.view.dataset.state = next;
   updateControls();
+  if (!changed) return;
+  if (next === 'ready') setStatus('Ready — press Start interview');
+  else if (next === 'done') setStatus('Interview finished — restart or export it');
 }
 
 // ============================================================

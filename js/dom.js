@@ -18,7 +18,7 @@ function cacheEls() {
     timer: $('im-timer'),
 
     // transcript + composer
-    transcript: $('im-transcript'), status: $('im-status'), hint: $('im-hint'),
+    transcript: $('im-transcript'), status: $('im-status'),
     imText: $('im-text'),
     btnPlus: $('im-plus'), btnMic: $('im-mic'), btnCam: $('im-cam'), btnSend: $('im-send'),
     btnPrimary: $('im-primary'),

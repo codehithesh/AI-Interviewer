@@ -9,9 +9,10 @@
 // The screen state (`state.view`) and the activity state (busy / speaking /
 // listening) are separate axes and both matter:
 //
-//   view = ready   the composer is visible but INERT — only [Cam] is live, so the
-//                  user can check their camera before starting. [Start interview]
-//                  is the only thing that begins a session.
+//   view = ready   the composer is visible but INERT — [Cam], which lives in the
+//                  rail, is the only live control, so the user can check their
+//                  camera before starting. [Start interview] is the only thing that
+//                  begins a session.
 //   view = live    the interview is running; the activity state then decides.
 //   view = done    composer and [+] are disabled; [Cam] stays available and export
 //                  remains enabled, because a finished session can always be saved.
@@ -73,13 +74,14 @@ function updateControls() {
   // good (set once by initSTT), so only touch it when recognition exists.
   if (sttSupported()) els.btnMic.disabled = inert || !live;
 
-  // [Cam] is the one control that stays live on every screen state, including
-  // Ready and Done: the camera is a local self-view, not part of the interview.
-  // When this browser has no getUserMedia at all the button is disabled for good
-  // (set once by initParticipants), so only touch it when a camera is possible.
+  // [Cam] belongs to the rail, next to [Start interview] / [END] / [Restart]: it is
+  // the one control that stays live on every screen state, including Ready and Done,
+  // because the camera is a local self-view and not part of the interview. When this
+  // browser has no getUserMedia at all the button is disabled for good (set once by
+  // initParticipants), so only touch it when a camera is possible.
   if (cameraSupported()) els.btnCam.disabled = false;
 
-  // ---------- the rail's single action button ----------
+  // ---------- the rail's action button ----------
   // [Start interview] is guarded against a double press, but [END] is NOT disabled
   // while a request is in the air: §4.2 and §10.4 both say it ends the interview
   // immediately, and a slow or hanging provider must never leave the user with no
@@ -113,17 +115,16 @@ function updateControls() {
   els.btnStop.disabled = !reading;
   setPauseBtn(state.tts.paused ? 'Resume' : 'Pause');
 
-  // ---------- the two text readouts ----------
+  // ---------- the status readout (§8.3) ----------
+  // The one continuous readout of the activity state. The longer Ready and Done
+  // nudges are toasts, posted by setView() in js/interview.js — they belong to the
+  // transition into those screens rather than to every pass through here.
   const activity = activityState();
   const paused = state.tts.paused;
-  const line = state.view === 'ready' ? 'Ready'
+  els.status.textContent = state.view === 'ready' ? 'Ready'
     : state.view === 'done' ? 'Interview finished'
     : paused ? 'Paused — press Resume to carry on'
     : STATUS_TEXT[activity];
-  els.status.textContent = line;
-  els.hint.textContent = state.view === 'ready' ? 'Ready — press Start interview'
-    : state.view === 'done' ? 'Interview finished — restart or export it'
-    : line;
 }
 
 // Typing is the user's own hand, so the answer being composed is no longer one the
