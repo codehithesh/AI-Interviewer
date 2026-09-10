@@ -1,5 +1,5 @@
 // ============================================================
-// INTERVIEW SCREEN — Ready / Live / Done, and the session lifecycle
+// INTERVIEW SCREEN — Ready / Live / Done, and the answer → question loop
 // ============================================================
 // The screen is the whole app, and it has exactly three states. They are class and
 // DOM toggles inside this one document — nothing about a state change is written
@@ -14,26 +14,79 @@
 //           the evaluation as the last transcript item, the rail's button becomes
 //           [Restart]. Not a third screen.
 //
-// Session state is torn down in exactly one place — resetSession() — so [Restart]
-// cannot leave a leftover transcript, timer, camera stream or utterance behind.
-// The markup lives in js/interview-view.js.
+// The loop is deliberately small, and state.busy is the single gate on it:
+//
+//   [Start interview] ─▶ requestInterviewerTurn() ─▶ greeting + question 1
+//   answer ([>] / Enter / code) ─▶ pushHistory ─▶ requestInterviewerTurn() ─▶ question N
+//
+// Every path that can start a request goes through requestInterviewerTurn(), and
+// the first thing it does is refuse if one is already in the air. That is what stops
+// a double-clicked [>], a held Enter and the automatic follow-up request from ever
+// issuing two concurrent calls (§8.3) — the guard is not repeated at the call sites.
+//
+// The model is asked for one turn at a time on purpose: the client counts questions
+// and will enforce the cap (§10.4), rather than trusting the model to declare itself
+// finished.
+//
+// The markup lives in js/interview-view.js; the prompt, the reply format and the
+// history live in js/interviewer.js.
 
 'use strict';
+
+// Bumped by [Start interview] and by [Restart]. A reply that arrives after the
+// session it belongs to has been ended or replaced is dropped instead of landing in
+// the wrong interview — which is what makes it safe to leave [END] live while a
+// request is still in the air.
+let sessionId = 0;
 
 // ============================================================
 // Rendering
 // ============================================================
 
 // Which role wrote a turn decides how it renders, and for a model reply that is
-// also the whole security boundary: 'markdown' is only ever passed for text the
-// model wrote, and js/markdown.js escapes before it writes a single tag. A typed
-// answer, a code attachment and an error are all plain text.
+// also the whole security boundary: markdown is only ever rendered through
+// js/markdown.js, which escapes before it writes a single tag. A typed answer and an
+// error are plain text.
 function turnListItem(turn) {
   const li = document.createElement('li');
   li.className = 'turn';
   li.dataset.kind = turn.kind;
   li.dataset.role = turn.role;
   return li;
+}
+
+// Does this answer carry a code block? With the code editor inserting a fenced
+// snippet into the composer rather than sending on its own, an answer is prose and
+// code in one message — this is what tells the renderer to lay it out as markdown so
+// the snippet becomes a real code block instead of a wall of backticks.
+function hasCodeFence(text) {
+  return /^ {0,3}(?:`{3,}|~{3,})/m.test(text || '');
+}
+
+// [Try again] on a failed turn. The candidate's answer is already in the history —
+// only the request for the next question failed — so retrying asks again with the
+// same context, which is exactly what makes "fix it in Settings and carry on" work
+// after a quota refusal. The button re-checks the guard through
+// requestInterviewerTurn(), so a double click cannot fire two requests.
+function retryRow() {
+  const row = document.createElement('div');
+  row.className = 'bubble-actions';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn compact';
+  btn.textContent = 'Try again';
+  btn.title = 'Ask the interviewer again — your answers so far are kept';
+  btn.addEventListener('click', () => {
+    // A finished session keeps its transcript, so an old error turn can still be on
+    // screen. Say why nothing happens rather than looking broken.
+    if (state.view !== 'live') {
+      setStatus('This interview has ended — press Restart to run another', 'warn');
+      return;
+    }
+    requestInterviewerTurn();
+  });
+  row.appendChild(btn);
+  return row;
 }
 
 function appendBubble(turn) {
@@ -51,30 +104,20 @@ function appendBubble(turn) {
     t.textContent = '· mic';
     head.appendChild(t);
   }
-  if (turn.kind === 'code') {
-    const t = document.createElement('span');
-    t.className = 'tag';
-    t.textContent = '· code';
-    head.appendChild(t);
-  }
   bubble.appendChild(head);
 
   const body = document.createElement('div');
   body.className = 'bubble-body';
-  if (turn.kind === 'code') {
-    const pre = document.createElement('pre');
-    pre.className = 'code-block';
-    const code = document.createElement('code');
-    code.textContent = turn.text;   // textContent: code is never parsed as markup
-    pre.appendChild(code);
-    body.appendChild(pre);
-  } else if (turn.role === 'ai' && turn.kind === 'question' && typeof renderMarkdownInto === 'function') {
-    body.classList.add('md');
-    renderMarkdownInto(body, turn.text);
+  if (turn.role === 'ai' && turn.kind === 'question' && typeof renderMarkdownInto === 'function') {
+    renderMarkdownInto(body, turn.text);          // the model writes markdown
+  } else if (turn.role === 'user' && hasCodeFence(turn.text) && typeof renderMarkdownInto === 'function') {
+    renderMarkdownInto(body, turn.text);          // prose + a fenced snippet
   } else {
-    body.textContent = turn.text;
+    body.textContent = turn.text;                 // textContent: never markup
   }
   bubble.appendChild(body);
+
+  if (turn.retry) bubble.appendChild(retryRow());
 
   li.appendChild(bubble);
   els.transcript.appendChild(li);
@@ -278,29 +321,32 @@ function startInterview() {
 
   const prov = activeProvider();
   if (!prov.key) {
-    // Plain language, points at Settings, and fires no request at all.
-    setStatus(`Add your ${prov.label} API key in Settings before starting`, 'error');
-    setApiError(`Enter your ${prov.label} API key to start the interview`);
+    // Plain language, points at Settings, and fires no request at all (§4.1).
+    setStatus(`Add your ${prov.label} API key in Settings before starting the interview`, 'error');
     return;
   }
 
+  sessionId += 1;
   state.startedAt = Date.now();
   state.finishedAt = null;
   state.endedReason = null;
-  state.messages = [];
   state.transcript = [];
   state.answers = [];
   state.questionNumber = 0;
   state.evaluation = null;
   state.voiceTyped = false;
+  state.busy = false;
+  wipeHistory(state.config);   // §10.1 brief, built from the snapshot above
 
   clearTranscript();
   setView('live');
   startTimer();
 
-  // Phase 2 replaces this with the real opening turn: the interviewer's greeting
-  // and introduction, spoken, carrying the first question.
-  addNotice('Interview starting… the interviewer will greet you and ask the first question.');
+  // The opening turn is a request like any other: the interviewer greets the
+  // candidate and asks its first question in one message (§10.2), which is also
+  // question number one. It runs from this user gesture, which is what lets the
+  // greeting be spoken under the browser's autoplay policy (§8.1).
+  requestInterviewerTurn();
 }
 
 // Ends the interview and runs the evaluation. Which of the three causes ended it is
@@ -315,7 +361,8 @@ function endInterview(reason) {
   // interview; the camera tracks are stopped because a finished session with a
   // live camera is a light the user did not ask to keep on.
   if (typeof stopTTS === 'function') stopTTS();
-  if (typeof stopListening === 'function') stopListening();
+  if (typeof discardDictation === 'function') discardDictation();
+  else if (typeof stopListening === 'function') stopListening();
 
   setView('done');
   paintTimer();
@@ -323,6 +370,7 @@ function endInterview(reason) {
   const elapsed = formatClock(elapsedSeconds());
   addNotice(`Interview finished after ${elapsed} (${endReasonText(state.endedReason)}). `
     + (state.answers.length ? '' : 'No answers were given, so no evaluation was produced.'));
+  // Phase 5 runs the evaluation here, once, when answers exist.
 }
 
 function endReasonText(reason) {
@@ -336,8 +384,12 @@ function endReasonText(reason) {
 function resetSession() {
   stopTimer();
   if (typeof stopTTS === 'function') stopTTS();
-  if (typeof stopListening === 'function') stopListening();
+  if (typeof discardDictation === 'function') discardDictation();
+  else if (typeof stopListening === 'function') stopListening();
   if (typeof stopCamera === 'function') stopCamera();
+
+  // A reply still in flight belongs to the session that is being thrown away.
+  sessionId += 1;
 
   state.startedAt = null;
   state.finishedAt = null;
@@ -368,11 +420,144 @@ function goToReady() {
   resetSession();
 }
 
+// ============================================================
+// The answer → question loop
+// ============================================================
+
+// A failed turn is shown in the transcript, not thrown: the interview stays alive
+// whatever the provider did. The turn carries [Try again] because the answer is
+// already in the history — only the request failed.
+function reportTurnError(message, opts) {
+  const o = opts || {};
+  addTurn({ role: 'ai', kind: 'error', text: message, retry: !!o.retry });
+  setStatus(message, o.sticky ? 'error' : 'warn');
+}
+
+// The one network path. Asks the interviewer for its next turn — the opening
+// greeting plus first question, or the question that follows the answer just sent.
+async function requestInterviewerTurn() {
+  // The single in-flight guard (§8.3). Every caller relies on this one check rather
+  // than carrying its own, so the send button, Enter, [Try again] and the automatic
+  // follow-up cannot issue two requests between them.
+  if (state.view !== 'live' || state.busy) return;
+
+  // The provider and the model are read LIVE, not from the snapshot, and that is
+  // deliberate. A key that has run out of quota or a model ID the account rejects
+  // has to be fixable in Settings mid-interview and take effect on the very next
+  // request; a snapshot would leave the user stuck until they restarted and lost
+  // the transcript. §4.1's snapshot governs the interviewer's BRIEF (role, type,
+  // difficulty, duration, cap, seed) — the brief is frozen, the plumbing is not.
+  const prov = activeProvider();
+  if (!prov.key) {
+    reportTurnError(
+      `No ${prov.label} API key is set, so the interviewer cannot ask anything. Add one in Settings, then press Try again — nothing said so far is lost.`,
+      { retry: true, sticky: true }
+    );
+    return;
+  }
+
+  // One voice at a time: an utterance in progress is cancelled before the next
+  // request goes out (§8.1).
+  if (typeof stopTTS === 'function') stopTTS();
+
+  const token = sessionId;
+  state.busy = true;
+  updateControls();
+
+  let reply = null;
+  try {
+    reply = await callChat(prov, prov.model, historyForRequest());
+  } catch (err) {
+    if (token !== sessionId || state.view !== 'live') return;
+    reportTurnError(describeApiError(err, prov), { retry: true, sticky: true });
+    return;
+  } finally {
+    // Only the session that made the request may clear the flag — otherwise a reply
+    // to an abandoned interview would unlock the guard on the new one.
+    if (token === sessionId) {
+      state.busy = false;
+      updateControls();
+    }
+  }
+
+  // [END], the timer, the question cap or [Restart] may all have landed while the
+  // request was in the air. The turn is dropped rather than shown in a dead session.
+  if (token !== sessionId || state.view !== 'live') return;
+
+  applyInterviewerReply(reply && reply.text);
+  updateControls();
+}
+
+// Render, record and speak one interviewer turn.
+function applyInterviewerReply(raw) {
+  const parsed = parseInterviewerReply(raw);
+
+  if (!parsed.question) {
+    reportTurnError(parsed.error, { retry: true });
+    return false;
+  }
+
+  // A reply that was not JSON but still reads as a question is used rather than
+  // thrown away; say so, because it usually means the model ignored the format and
+  // the user may want to switch models.
+  if (parsed.repaired) {
+    addNotice('The interviewer replied in the wrong format, so the text is shown exactly as it arrived. Switching model in Settings often fixes this.');
+  }
+
+  // The displayed text is what goes into history, so the model's next turn is
+  // conditioned on what the candidate actually saw and heard.
+  pushHistory('assistant', parsed.question);
+  addTurn({ role: 'ai', kind: 'question', text: parsed.question });
+  state.questionNumber += 1;
+
+  speakInterviewer(parsed.question);
+
+  // Phase 5 ends the interview here when state.config.questions is reached
+  // (endedReason 'question_cap'); the client owns that count by design (§10.4).
+  return true;
+}
+
+// Every interviewer message is spoken as it arrives unless auto-speak is off. The
+// words are the markdown-aware reading path, so markers are not read out (§8.1).
+function speakInterviewer(text) {
+  if (state.speech.autoSpeak === false) return;
+  if (typeof speakReply !== 'function' || typeof ttsAvailable !== 'function' || !ttsAvailable()) return;
+  speakReply(text);
+}
+
+// Send what the composer holds. One message, whether it is prose, a fenced snippet
+// from the code editor, or prose around one — the editor is a writing aid, so code
+// arrives here already part of the answer.
+function sendAnswer() {
+  if (state.view !== 'live' || state.busy || state.speaking) return;
+
+  const text = els.imText.value.trim();
+  if (!text) return;                       // nothing to say — [>] is disabled anyway
+
+  // Both of these are the spec's own list of what ends a recording and a reading
+  // (§8.2, §8.1): sending an answer stops the mic and cancels the utterance.
+  if (typeof discardDictation === 'function') discardDictation();
+  else if (typeof stopListening === 'function') stopListening();
+  if (typeof stopTTS === 'function') stopTTS();
+
+  // Captured before the reset below: the tag on the bubble says where this answer
+  // came from (§7.3).
+  const mode = state.voiceTyped ? 'voice' : 'text';
+  state.voiceTyped = false;
+
+  pushHistory('user', text);
+  addTurn({ role: 'user', kind: 'answer', mode, text });
+
+  els.imText.value = '';
+  autoGrowComposer();
+  updateControls();
+
+  requestInterviewerTurn();
+}
+
 // ---------- wiring ----------
 function wireInterview() {
-  els.btnSend.addEventListener('click', () => {
-    if (typeof sendAnswer === 'function') sendAnswer();
-  });
+  els.btnSend.addEventListener('click', sendAnswer);
   els.btnPrimary.addEventListener('click', () => {
     if (state.view === 'ready') startInterview();
     else if (state.view === 'live') endInterview('end');

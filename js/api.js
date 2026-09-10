@@ -120,3 +120,54 @@ function parseJsonLoose(text) {
   }
   throw new Error('model returned non-JSON output');
 }
+
+// ============================================================
+// Reporting a failed request in plain language (§14)
+// ============================================================
+// Every branch below names the provider, because "it failed" is not something the
+// user can act on. The raw provider text is never the message: at most the status
+// code trails a sentence, and the primary line always says what happened and what
+// to do about it.
+//
+// This matters more here than in most apps, because the recovery path is real: the
+// provider and the model are read live on every request, so switching to another
+// provider or typing a current model ID in Settings takes effect on the very next
+// attempt — no restart, no lost transcript.
+function describeApiError(error, prov) {
+  const label = (prov && prov.label) || 'the provider';
+  const model = (prov && prov.model) || 'that model';
+  const status = error && error.status;
+  const body = String((error && error.body) || '').toLowerCase();
+  const message = String((error && error.message) || '').toLowerCase();
+
+  // fetch() rejects with a TypeError whenever the request never got an answer, and
+  // a blocked cross-origin request is indistinguishable from a dead network at this
+  // layer — Chrome says "Failed to fetch", Safari "Load failed". So both are told
+  // together, and the CORS half says plainly that no proxy is added (§3, §14).
+  if (error instanceof TypeError || /failed to fetch|networkerror|load failed/.test(message)) {
+    return `Could not reach ${label}. If your connection is fine, ${label} may be blocking direct browser requests, and that would need a proxy — this app does not add one.`;
+  }
+
+  // A quota/credit refusal is an account problem, not a bad key: saying so stops the
+  // user re-pasting a key that is perfectly valid. Providers use 402, or 429 with a
+  // billing word in the body.
+  const quota = status === 402
+    || (status === 429 && /quota|insufficient|billing|credit|balance|exceeded/.test(body));
+  if (quota) {
+    return `${label} is out of credits or over quota for this account. That is a billing problem this page cannot fix — switch provider, or pick another model in Settings, and press Try again; the change applies at once.`;
+  }
+  if (status === 429) return `${label} is busy right now. Wait a moment, then press Try again.`;
+  if (status === 401 || status === 403) {
+    return `${label} rejected the API key. Check it in Settings — a revoked key, or a key belonging to another account, does this.`;
+  }
+  if (status === 404) {
+    return `Your ${label} account has no model called "${model}". Open Settings and type a current model ID, then press Try again.`;
+  }
+  if (status === 400) {
+    return `${label} would not accept "${model}" for this request. Open Settings, pick or type a current model ID, then press Try again.`;
+  }
+  if (status >= 500) {
+    return `${label} had a server problem and could not answer. Press Try again in a moment. (HTTP ${status})`;
+  }
+  return `The ${label} request failed${status ? ` (HTTP ${status})` : ''}. Press Try again, or check Settings.`;
+}

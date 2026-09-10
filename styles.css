@@ -294,13 +294,17 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .bubble.ai.error { border-color: var(--error); }
 .bubble.ai.error .bubble-header { color: var(--error); opacity: 1; }
 
-/* code attached from the editor popup — its own turn, never mixed with prose */
-.code-block {
-  margin: 0; padding: 10px 12px; border-radius: 8px;
-  background: var(--bg); border: 1px solid var(--border);
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 12.5px; line-height: 1.5; white-space: pre; overflow-x: auto;
-}
+/* A code block no longer arrives as its own turn: the code editor inserts a fenced
+   snippet into the composer, so the answer is one message and the markdown rules
+   below lay the snippet out. Inside a candidate bubble that needs one adjustment —
+   the bubble is dark green with white text, while the code surface is the page
+   background, which is white in the light theme. Left alone, white text on that
+   white panel is invisible, so the text colour is reset with the surface. */
+.bubble.user .bubble-body.md pre,
+.bubble.user .bubble-body.md code { color: var(--text); }
+
+/* [Try again] on a failed turn, inside the error bubble it belongs to */
+.bubble-actions { display: flex; gap: 8px; margin-top: 10px; }
 
 /* ---------- readiness card (the Ready state, in place of a transcript) ---------- */
 .readiness-turn { align-items: stretch; }

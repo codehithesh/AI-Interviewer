@@ -30,11 +30,13 @@ function setSpeaking(v) {
 function ttsAvailable() { return !!synth; }
 
 // The newest completed reply: what the transport reads, and the reason the bar is
-// on screen at all. Errors are not read aloud, so they are skipped.
+// on screen at all. An interviewer turn is `kind: 'question'` (the opening greeting
+// counts as one of those); 'text' is still accepted so an older turn shape cannot
+// silently disable the Read button. Errors are not read aloud, so they are skipped.
 function latestAiReply() {
   for (let i = state.transcript.length - 1; i >= 0; i -= 1) {
     const t = state.transcript[i];
-    if (t.role === 'ai' && t.kind === 'text' && t.text) return t;
+    if (t.role === 'ai' && (t.kind === 'question' || t.kind === 'text') && t.text) return t;
   }
   return null;
 }

@@ -78,7 +78,12 @@ function updateControls() {
   els.btnCam.disabled = false;
 
   // ---------- the rail's single action button ----------
-  els.btnPrimary.disabled = state.busy;
+  // [Start interview] is guarded against a double press, but [END] is NOT disabled
+  // while a request is in the air: §4.2 and §10.4 both say it ends the interview
+  // immediately, and a slow or hanging provider must never leave the user with no
+  // way out of a live session. A reply that lands after the end is dropped in
+  // js/interview.js.
+  els.btnPrimary.disabled = state.busy && state.view === 'ready';
   els.btnPrimary.textContent = state.view === 'ready' ? 'Start interview'
     : state.view === 'done' ? 'Restart'
     : 'END';
@@ -119,9 +124,17 @@ function updateControls() {
     : line;
 }
 
+// Typing is the user's own hand, so the answer being composed is no longer one the
+// mic produced. The dictation path writes .value directly, which fires no 'input'
+// event, so a spoken answer keeps its `· mic` tag until it is actually sent.
+function onComposerInput() {
+  state.voiceTyped = false;
+  autoGrowComposer();
+  updateControls();
+}
+
 function wireComposer() {
-  els.imText.addEventListener('input', autoGrowComposer);
-  els.imText.addEventListener('input', updateControls);
+  els.imText.addEventListener('input', onComposerInput);
   els.imText.addEventListener('keydown', (e) => {
     // Enter sends, Shift+Enter newlines (§15). sendAnswer() re-checks the guard,
     // so holding Enter cannot slip a second request past this.

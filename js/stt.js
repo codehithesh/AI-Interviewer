@@ -44,6 +44,12 @@ let restartTimer = null;
 let restartFails = 0;
 let errorSessions = 0;
 
+// Set while a recording is being thrown away rather than stopped. Chrome answers
+// stop() with one last, more accurate final result and then onend; on the send path
+// the composer has already been cleared, so without this the answer would be typed
+// back into it a moment after being sent.
+let discarding = false;
+
 function sttSupported() { return !!SR; }
 
 // ---------- transcript ----------
@@ -122,6 +128,7 @@ function toggleListening() {
   sessionText = '';
   restartFails = 0;
   errorSessions = 0;
+  discarding = false;          // a new recording is live again
   wantListening = true;
   state.listening = true;
   els.btnMic.classList.add('listening'); // icon turns into icon + “Recording”
@@ -147,6 +154,27 @@ function stopListening() {
   endListening();
 }
 
+// End the recording and throw away everything the recogniser still has in flight.
+// Used by the paths that end dictation because the answer has already been taken —
+// sending it, the interview ending, [Restart] — where a late final result would
+// otherwise repaint a composer that has moved on. state.recBase is cleared with the
+// rest: the recording is over, and the next one starts from whatever is there then.
+function discardDictation() {
+  if (!recognition || (!state.listening && !wantListening)) return;
+  discarding = true;
+  wantListening = false;
+  clearTimeout(restartTimer);
+  restartTimer = null;
+  try { recognition.stop(); } catch { /* nothing running — fine */ }
+  state.listening = false;
+  els.btnMic.classList.remove('listening');
+  els.btnMic.title = 'Native speech-to-text';
+  committed = '';
+  sessionText = '';
+  state.recBase = '';
+  updateControls();
+}
+
 // ---------- wiring ----------
 function initSTT() {
   if (!SR) {
@@ -162,6 +190,7 @@ function initSTT() {
   recognition.maxAlternatives = 1;
 
   recognition.onresult = (event) => {
+    if (discarding) return;    // the recording was thrown away; see discardDictation()
     let t = '';
     for (let i = 0; i < event.results.length; i++) t += event.results[i][0].transcript;
     sessionText = t.trim();
@@ -182,6 +211,9 @@ function initSTT() {
   // having heard nothing. That is just the user thinking, and aborting after a
   // run of silent sessions would cut off the very people the mic is for.
   recognition.onend = () => {
+    // A discarded recording ends here and nowhere else: drop the last result too,
+    // and do not reopen the microphone under it.
+    if (discarding) { discarding = false; return; }
     commitSession();
     if (wantListening) scheduleRestart();
   };

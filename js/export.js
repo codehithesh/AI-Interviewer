@@ -52,10 +52,12 @@ function buildMarkdown() {
     md += `### ${who}${tag} — ${new Date(t.ts).toLocaleString()}\n\n`;
     // A reply is already markdown, so it is written out exactly as it arrived:
     // blank-line-separating it, as a typed message needs, would put empty lines
-    // inside a fenced code block and break the fence. A typed message is plain
-    // text, where markdown collapses a bare newline into a space, so those are
-    // still blank-line-separated to keep the author's line breaks.
-    md += (t.role === 'ai' && t.kind === 'text' ? t.text : t.text.split('\n').join('\n\n')) + '\n\n';
+    // inside a fenced code block and break the fence. An interviewer turn is
+    // `kind: 'question'`; 'text' is still honoured for the older turn shape. A
+    // typed message is plain text, where markdown collapses a bare newline into a
+    // space, so those are still blank-line-separated to keep the author's breaks.
+    const isMarkdown = t.role === 'ai' && (t.kind === 'question' || t.kind === 'text');
+    md += (isMarkdown ? t.text : t.text.split('\n').join('\n\n')) + '\n\n';
   }
   return md;
 }

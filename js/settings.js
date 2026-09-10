@@ -35,21 +35,21 @@ function renderProviderCards() {
     const def = (draft && draft.models[p.id]) || p.def || p.models[0].v;
     const listId = 'models-' + p.id;
     const opts = p.models.map((m) =>
-      `<option value="${m.v}">${m.l}</option>`
+      `<option value="${escapeAttr(m.v)}">${escapeAttr(m.l)}</option>`
     ).join('');
     return `
       <div class="provider-card${p.id === state.provider ? ' active' : ''}" data-provider="${p.id}">
         <div class="pc-head">
           <span class="pc-radio"></span>
-          <span class="pc-name">${p.label}</span>
-          <span class="pc-models">${p.models.map((m) => m.l).join(' · ')}</span>
+          <span class="pc-name">${escapeAttr(p.label)}</span>
+          <span class="pc-models">${escapeAttr(p.models.map((m) => m.l).join(' · '))}</span>
         </div>
         <label for="key-${p.id}">API key</label>
-        <input type="password" id="key-${p.id}" placeholder="${p.ph || 'Paste your API key'}" autocomplete="off" spellcheck="false">
+        <input type="password" id="key-${p.id}" placeholder="${escapeAttr(p.ph || 'Paste your API key')}" autocomplete="off" spellcheck="false">
         <label for="model-${p.id}">Model</label>
-        <input type="text" id="model-${p.id}" list="${listId}" value="${def}" spellcheck="false" autocomplete="off" placeholder="Type a current model ID">
+        <input type="text" id="model-${p.id}" list="${listId}" value="${escapeAttr(def)}" spellcheck="false" autocomplete="off" placeholder="Type a current model ID">
         <datalist id="${listId}">${opts}</datalist>
-        ${p.hint ? `<p class="hint">${p.hint}</p>` : ''}
+        ${p.hint ? `<p class="hint">${escapeAttr(p.hint)}</p>` : ''}
       </div>`;
   }).join('\n');
 }

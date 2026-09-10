@@ -6,6 +6,12 @@
 // json / temp      = whether the API accepts response_format + temperature;
 //                    callChat retries bare if a model rejects either.
 // The wire format itself lives in js/api.js.
+//
+// TODO — unverified model IDs. The Anthropic, Gemini and Moonshot `models` lists
+// below have NOT been checked against each provider's live documentation and must
+// not be treated as correct. They are only suggestions in a <datalist>, so a stale
+// ID costs the user a retype rather than a dead end (Settings' model field is
+// free text) — but these entries still need verifying before release.
 
 'use strict';
 
@@ -100,14 +106,16 @@ const PROVIDER_MAP = Object.fromEntries(PROVIDERS.map((p) => [p.id, p]));
 function providerInput(id) { return document.getElementById('key-' + id); }
 function providerModel(id) { return document.getElementById('model-' + id); }
 
-function modelOptions(p, selected) {
-  const def = selected || p.def || p.models[0].v;
-  return p.models.map((m) =>
-    `<option value="${m.v}"${m.v === def ? ' selected' : ''}>${m.l}</option>`
-  ).join('');
-}
-
 // The provider + key + model currently selected in the Settings modal.
+//
+// This reads the fields LIVE on purpose, so it is called again for every request
+// rather than cached at [Start interview]. A key that has run out of quota, or a
+// model ID the account rejects, has to be fixable in Settings mid-interview and take
+// effect on the very next attempt — see requestInterviewerTurn() and
+// describeApiError(). The §12 config snapshot covers the interviewer's brief, not
+// the plumbing. A consequence worth knowing: clicking a provider card, or editing a
+// model field, affects the running interview immediately, before Save.
+//
 // The fields are read defensively: the chat is wired before the saved settings
 // have loaded, so a message sent inside that window must report a missing key
 // rather than throw on a provider card that does not exist yet.

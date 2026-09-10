@@ -26,3 +26,19 @@ function sanitizeKey(raw) {
     .replace(/[^\u0000-\u00FF]/g, '');
   return { key, removed: s.length - key.length };
 }
+
+// ---------- text that lands in an attribute ----------
+// The Settings provider cards are the one place this app still builds markup as a
+// string. Their inputs carry a model ID the user typed (and that localStorage can
+// hand back on the next boot), so a quote or an angle bracket in one must not be
+// able to break out of the attribute it is written into. Everything the transcript
+// renders goes through textContent or js/markdown.js instead, which is why this
+// exists only for that one surface.
+function escapeAttr(raw) {
+  return String(raw == null ? '' : raw)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
