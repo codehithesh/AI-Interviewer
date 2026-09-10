@@ -46,16 +46,14 @@ const INTERVIEW_VIEW_HTML = `
       <div class="participants">
 
         <!-- AI interviewer. The portrait is a local file loaded from icons/ — no
-             external request, nothing uploaded. Small animated bars move only while
-             speechSynthesis is actually speaking, driven by real TTS start/end
-             events (js/participants.js) — never by a timer. -->
+             external request, nothing uploaded. It fills the card edge to edge and
+             the name is overlaid on its corner, rather than sitting in a strip
+             below it. Both tiles carry the same fixed frame, so the rail reads as
+             a pair rather than two differently-shaped cards. -->
         <div class="tile" id="im-avatar-tile">
           <div class="tile-media">
             <img class="avatar" id="im-avatar" src="icons/interviewer_face.jpg" alt="AI interviewer" width="640" height="360">
-          </div>
-          <div class="tile-foot">
             <span class="tile-name">AI Interviewer</span>
-            <span class="wiggle" id="im-wiggle" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           </div>
         </div>
 
@@ -66,8 +64,6 @@ const INTERVIEW_VIEW_HTML = `
           <div class="tile-media">
             <video id="im-video" class="self-view hidden" playsinline muted autoplay></video>
             <span id="im-initials" class="initials" aria-hidden="true"></span>
-          </div>
-          <div class="tile-foot">
             <span class="tile-name" id="im-candidate-name">You</span>
           </div>
         </div>
@@ -118,13 +114,14 @@ const INTERVIEW_VIEW_HTML = `
            lands, without moving focus off the composer. -->
       <ol id="im-transcript" class="transcript" role="log" aria-live="polite" aria-label="Interview transcript"></ol>
 
-       <!-- The status line (§8.3): Speaking / Listening / Thinking / Ready. It is the
-           one always-visible readout of the activity state, and it is text, so the
-           state is never communicated by colour alone. The wording that used to sit
-           above the composer as a second copy of this is a toast now — see setView()
-           in js/interview.js. -->
-      <div class="iv-status">
-        <span id="im-status" class="status-text" role="status" aria-live="polite">Ready</span>
+       <!-- The status line (§8.3): Speaking / Listening / Thinking. It shows only
+            while something is actually happening — a settled screen has nothing to
+            report, so the bar is hidden entirely rather than holding a "Ready" line
+            open above the composer. updateControls() (js/composer.js) owns that
+            decision; the bar carries .shimmer while a request is in the air so a
+            wait looks like one. -->
+      <div id="im-status-bar" class="iv-status hidden">
+        <span id="im-status" class="status-text" role="status" aria-live="polite"></span>
       </div>
 
       <!-- ===================== COMPOSER =====================

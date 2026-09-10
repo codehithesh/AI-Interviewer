@@ -10,10 +10,10 @@
 
 const synth = window.speechSynthesis || null;
 
-// Everything that has to redraw when the speaking state flips registers here: the
-// composer, which decides whether the microphone may be live (§8.3), and the
-// participants rail, whose wiggle must move only while there is real speech (§6).
-// Two different modules, so it is a list rather than a single callback.
+// Everything that has to redraw when the speaking state flips registers here. The
+// composer is the one listener today — it decides whether the microphone may be
+// live and what the status line says (§8.3) — so this stays a list rather than
+// being collapsed into a direct call.
 const speakingListeners = [];
 
 function addSpeakingListener(fn) {

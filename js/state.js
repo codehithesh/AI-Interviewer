@@ -26,7 +26,7 @@ const state = {
   // ---------- speech ----------
   voiceTyped: false,      // the answer being composed came from the mic
   listening: false,       // speech recognition is recording (the user's intent)
-  speaking: false,        // TTS active → drives mic gating and the wiggle
+  speaking: false,        // TTS active → drives mic gating and the status line
 
   // ---------- the configuration this interview started with ----------
   config: {

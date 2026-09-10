@@ -17,14 +17,14 @@ function cacheEls() {
     view: $('im-view'),
     timer: $('im-timer'),
 
-    // transcript + composer
-    transcript: $('im-transcript'), status: $('im-status'),
+    // transcript + composer. The status bar is cached as well as the text: the bar
+    // is hidden as a whole when there is nothing to report, not just blanked.
+    transcript: $('im-transcript'), status: $('im-status'), statusBar: $('im-status-bar'),
     imText: $('im-text'),
     btnPlus: $('im-plus'), btnMic: $('im-mic'), btnCam: $('im-cam'), btnSend: $('im-send'),
     btnPrimary: $('im-primary'),
 
     // participants rail
-    wiggle: $('im-wiggle'),
     candidateTile: $('im-candidate-tile'), candidateName: $('im-candidate-name'),
     video: $('im-video'), initials: $('im-initials'),
 

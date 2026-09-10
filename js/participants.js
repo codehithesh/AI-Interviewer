@@ -1,14 +1,12 @@
 // ============================================================
-// PARTICIPANTS — the AI tile's speaking wiggle, and the candidate self-view
+// PARTICIPANTS — the AI tile, and the candidate self-view
 // ============================================================
 // The two tiles on the left rail, and the only pieces of media in the app (§6).
 //
-//   · the AI tile — a portrait served from this repo, plus the small animated
-//     bars. The bars move ONLY while speechSynthesis is actually speaking: they
-//     follow js/tts.js's real speaking state (synth.speak() start, the
-//     utterance's end/error events, pause/resume) and never a timer, so they
-//     cannot move while the app is silent. That is the whole point of the effect
-//     — it is evidence that the voice is live, not decoration that plays anyway.
+//   · the AI tile — a portrait served from this repo, filling the card edge to
+//     edge with the name laid over its corner. It carries no speaking indicator:
+//     the voice is audible, the status line says "Interviewer speaking…", and a
+//     decorative animation on top of both was one signal too many.
 //
 //   · the candidate tile — a LOCAL self-view. The stream is never recorded,
 //     never uploaded and never sent to any provider, and switching [Cam] off
@@ -22,20 +20,6 @@
 // itself what raises the prompt, and that is the first call made.
 
 'use strict';
-
-// ============================================================
-// The AI tile: the speaking wiggle
-// ============================================================
-
-// Registered with js/tts.js, which calls it whenever the speaking state flips —
-// including pause and resume, which flip no state flag of their own.
-function syncSpeechUI() {
-  // A paused reply is not speech, so the bars hold still until Resume. The static
-  // state is the accessible one: the status line already says "Interviewer
-  // speaking…" in words, and prefers-reduced-motion replaces the animation with a
-  // static indicator (styles.css) rather than removing the signal (§15).
-  els.wiggle.dataset.speaking = (state.speaking && !state.tts.paused) ? 'true' : 'false';
-}
 
 // ============================================================
 // The candidate tile: the self-view
@@ -165,10 +149,6 @@ function initParticipants() {
   els.candidateTile.title = CAMERA_PRIVACY_NOTE;
   els.initials.textContent = initialsFor(els.candidateName.textContent);
   setCameraUI(false);
-
-  // The wiggle follows js/tts.js, not a clock.
-  addSpeakingListener(syncSpeechUI);
-  syncSpeechUI();
 
   if (!cameraSupported()) {
     // Disabled once, with a reason in its tooltip; updateControls() leaves a button

@@ -241,41 +241,43 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   background: var(--panel); border-right: 1px solid var(--border);
 }
 .participants { display: flex; flex-direction: column; gap: 12px; }
+/* A tile is a frame with the media bled to its edges: no padding, no foot strip,
+   and the media clipped to the card's own radius. */
 .tile {
-  display: flex; flex-direction: column; gap: 6px;
+  position: relative;
   border: 1px solid var(--border); border-radius: 12px;
-  background: var(--panel-2); padding: 8px;
+  background: var(--panel-2); overflow: hidden;
 }
 .tile-media {
   position: relative; width: 100%; aspect-ratio: 4 / 3;
-  border-radius: 8px; overflow: hidden;
+  overflow: hidden;
   background: var(--bg); display: flex; align-items: center; justify-content: center;
 }
+/* Both tiles are the same card: one frame, one ratio, so the rail reads as a pair.
+   Each image is cropped to fill that frame rather than being allowed to set its own
+   height — the portrait is 4:3 and the self-view varies by camera, and letting
+   either dictate the card would make the two differ in size. */
 .avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* the (...) from the mockup, in the tile corner: decorative and non-interactive */
-
 .self-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 .initials {
   font-size: 26px; font-weight: 650; letter-spacing: 0.04em; color: var(--text-dim);
 }
-.tile-foot { display: flex; align-items: center; gap: 8px; min-height: 18px; }
-.tile-name {
+/* The name sits ON the media, in its bottom-left corner, over a translucent black
+   plate. The plate is what keeps it legible on any frame — the portrait, a moving
+   self-view or the dark placeholder all read the same underneath it. It is pinned
+   to the left edge, so only the top-right corner is rounded: the other three are
+   the card's own. */
+.tile-media > .tile-name {
+  position: absolute; left: 0; bottom: 0; z-index: 2;
+  max-width: 100%;
+  padding: 3px 10px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  border-top-right-radius: 8px;
   font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--text-dim);
+  letter-spacing: 0.04em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-/* ---------- the speaking wiggle ----------
-   Four bars that move only while speechSynthesis is actually speaking, driven by
-   real start/end events rather than a timer — so it cannot animate while the app
-   is silent. [data-speaking] is set by js/participants.js. */
-.wiggle { margin-left: auto; display: flex; align-items: flex-end; gap: 2px; height: 14px; }
-.wiggle i { display: block; width: 3px; height: 4px; border-radius: 2px; background: var(--text-dim); }
-.wiggle[data-speaking="true"] i { background: var(--accent); animation: wiggle 0.9s ease-in-out infinite; }
-.wiggle[data-speaking="true"] i:nth-child(2) { animation-delay: 0.15s; }
-.wiggle[data-speaking="true"] i:nth-child(3) { animation-delay: 0.3s; }
-.wiggle[data-speaking="true"] i:nth-child(4) { animation-delay: 0.45s; }
-@keyframes wiggle { 0%, 100% { height: 4px; } 50% { height: 13px; } }
 
 /* The session button and [Cam], pinned to the bottom of the rail. The button takes
    the width that is left; [Cam] keeps its 34px square beside it. */
@@ -303,18 +305,43 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .check { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; cursor: pointer; }
 .check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
 
-/* the status line (§8.3): Speaking / Listening / Thinking / Ready
-   It reads as a bar in its own right — the panel surface, a rule along its top
-   edge separating it from the transcript, and vertical padding that gives the
-   single line of text somewhere to sit. The composer directly below supplies the
-   rule along its bottom edge. */
+/* the status line (§8.3): Thinking / Listening / Speaking
+   A short strip that appears only while something is happening — see
+   updateControls() in js/composer.js, which hides the whole bar otherwise. The one
+   line of text is centred in it, and the strip is kept shallow: it is a readout,
+   not a section of the panel. */
 .iv-status {
   flex: 0 0 auto;
-  padding: 8px 16px;
+  padding: 3px 16px;
   background: var(--panel);
   border-top: 1px solid var(--border);
+  text-align: center;
+  /* Hidden state is content-visibility, not display: the span keeps its aria-live
+     region while it is out of the layout, so a change of state is still announced.
+     display:none would take the whole region out of the accessibility tree and
+     silence it. .hidden is still what the class toggles; this is what does it. */
 }
+.iv-status.hidden { display: block !important; content-visibility: hidden; }
 .status-text { font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-dim); }
+
+/* While a request is in the air the words are swept by a highlight, so a wait
+   looks like a wait instead of a frozen label. It animates the text itself rather
+   than adding a spinner, which keeps the bar one line deep. */
+.iv-status.shimmer .status-text {
+  background-image: linear-gradient(90deg,
+    var(--text-dim) 30%,
+    var(--text) 50%,
+    var(--text-dim) 70%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  animation: status-shimmer 1.4s linear infinite;
+}
+@keyframes status-shimmer {
+  from { background-position: 125% 0; }
+  to   { background-position: -125% 0; }
+}
 
 /* ---------- transcript ----------
    A list, not a div soup: every turn is an <li>, including the readiness card. */
@@ -681,11 +708,12 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   .iv-header .head-title { display: none; }
 }
 
-/* Motion is decoration here: the speaking state is also carried by the status
-   line, which says "Interviewer speaking…". Preferring reduced motion replaces
-   the wiggle with a static state indicator rather than removing the signal. */
+/* Motion is decoration here: every state the shimmer and the mic pulse mark is also
+   stated in words by the status line. Preferring reduced motion keeps those words
+   and drops the movement. The shimmer keeps its highlight — a static gradient is
+   still a lit label — it just stops sweeping. */
 @media (prefers-reduced-motion: reduce) {
-  .wiggle[data-speaking="true"] i { animation: none; height: 13px; background: var(--accent); }
   .loader { animation: none; }
   #im-mic.listening { animation: none; }
+  .iv-status.shimmer .status-text { animation: none; background-position: 50% 0; }
 }

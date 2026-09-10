@@ -122,15 +122,34 @@ function updateControls() {
   setPauseBtn(state.tts.paused ? 'Resume' : 'Pause');
 
   // ---------- the status readout (§8.3) ----------
-  // The one continuous readout of the activity state. The longer Ready and Done
-  // nudges are toasts, posted by setView() in js/interview.js — they belong to the
-  // transition into those screens rather than to every pass through here.
+  // The bar exists only while there is something to report: thinking, speaking or
+  // listening. A screen that has settled — Ready, or a finished interview — has no
+  // activity to name, so the bar is taken out of the layout rather than left
+  // sitting above the composer holding a word that never changes.
+  //
+  // It is hidden with content-visibility, not display, so the span keeps its
+  // aria-live region and a state change is still announced. The text is emptied on
+  // the way out for the same reason: the span keeps its node, so re-entering the
+  // same state later still counts as a change worth announcing.
+  //
+  // The longer Ready and Done nudges are toasts, posted once by setView() in
+  // js/interview.js — they belong to the transition into those screens, not to
+  // every pass through here.
   const activity = activityState();
   const paused = state.tts.paused;
-  els.status.textContent = state.view === 'ready' ? 'Ready'
-    : state.view === 'done' ? 'Interview finished'
-    : paused ? 'Paused — press Resume to carry on'
-    : STATUS_TEXT[activity];
+  const statusText = paused ? 'Paused — press Resume to carry on' : STATUS_TEXT[activity];
+
+  // Only while a request is in the air: the sweep is the "still working" signal.
+  els.statusBar.classList.toggle('shimmer', activity === 'thinking');
+
+  const statusShown = state.view === 'live' && (state.busy || state.speaking || state.listening);
+  els.statusBar.classList.toggle('hidden', !statusShown);
+  if (statusShown === false) {
+    els.status.textContent = '';
+  } else if (els.status.textContent !== statusText) {
+    // Guarded so a re-render does not restart an animation that is already running.
+    els.status.textContent = statusText;
+  }
 }
 
 // Typing is the user's own hand, so the answer being composed is no longer one the
