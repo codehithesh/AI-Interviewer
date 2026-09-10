@@ -52,7 +52,6 @@ const INTERVIEW_VIEW_HTML = `
         <div class="tile" id="im-avatar-tile">
           <div class="tile-media">
             <img class="avatar" id="im-avatar" src="icons/interviewer_face.jpg" alt="AI interviewer" width="640" height="360">
-            <span class="tile-glyph" aria-hidden="true">(...)</span>
           </div>
           <div class="tile-foot">
             <span class="tile-name">AI Interviewer</span>

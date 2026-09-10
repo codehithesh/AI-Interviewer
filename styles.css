@@ -222,10 +222,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 }
 .avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* the (...) from the mockup, in the tile corner: decorative and non-interactive */
-.tile-glyph {
-  position: absolute; top: 6px; right: 8px;
-  font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim);
-}
+
 .self-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 .initials {
   font-size: 26px; font-weight: 650; letter-spacing: 0.04em; color: var(--text-dim);
