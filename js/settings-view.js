@@ -49,9 +49,13 @@ const SETTINGS_VIEW_HTML = `
            back. Candidate answers, notices and the evaluation are never masked. -->
       <div class="settings-section">
         <h4 class="modal-label">Chat</h4>
-        <label class="check mask-check" for="mask-ai-replies">
-          <input type="checkbox" id="mask-ai-replies">
-          <span>Mask AI replies</span>
+        <!-- The switch IS the checkbox the behaviour reads (js/settings.js reads
+             .checked) — restyled rather than replaced, so the control and the code
+             that stores it cannot drift apart. It is last in the row, which is what
+             puts it at the right-hand edge with the label opposite it. -->
+        <label class="switch-row" for="mask-ai-replies">
+          <span class="switch-label">Mask AI replies</span>
+          <input type="checkbox" id="mask-ai-replies" class="switch" role="switch">
         </label>
         <p class="hint">Covers each interviewer message in the chat with a solid <b>Hidden</b> panel. Your answers, the notices and the final evaluation stay visible, and nothing is deleted — the reply is still there to export and comes back the moment you unmask it.</p>
       </div>

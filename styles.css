@@ -317,9 +317,35 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 #rate-select { width: 88px; }
 .check { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; cursor: pointer; }
 .check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
-/* the Chat section's checkbox in Settings: kept to its own width so it reads as a
-   standalone setting rather than a control belonging to the field above it */
-.mask-check { align-self: flex-start; font-size: 12.5px; }
+/* the Chat section's switch. It is a REAL <input type="checkbox"> restyled with
+   appearance:none — js/settings.js reads .checked, so the control in the markup is
+   the same one the code stores and there is no second source of truth. The row is
+   label-left / control-right, which is what puts the switch on the right edge. */
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; cursor: pointer;
+}
+.switch-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.switch {
+  appearance: none; -webkit-appearance: none;
+  position: relative; flex: none;
+  width: 42px; height: 24px; margin: 0; padding: 0;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--panel-2); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+/* the knob. border-box means the track's padding box is 40x22, so 2px top/left and
+   an 18px knob leave an even 2px at the far edge when it slides across. */
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.15s, background 0.15s;
+}
+.switch:hover { border-color: var(--text-dim); }
+.switch:checked { background: var(--accent); border-color: var(--accent); }
+.switch:checked::after { transform: translateX(18px); background: #fff; }
+.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* the status line (§8.3): Thinking / Listening / Speaking
    A short strip that appears only while something is happening — see
