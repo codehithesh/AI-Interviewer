@@ -344,7 +344,12 @@ async function runEvaluation() {
     // `what` is the whole clause, because the hint interpolates it verbatim.
     const hint = typeof structuredReplyHint === 'function'
       ? structuredReplyHint(prov.name, prov.label, prov.model, 'there was no score to read') : '';
-    parseError = hint
+    // An empty reply from a model that DID write reasoning is a different failure with
+    // a different explanation — and the transport already retried it once (js/api.js),
+    // so "empty reply" would send the user looking at a key that is perfectly fine.
+    const empty = (reply && reply.reasoningOnly && typeof emptyAnswerHint === 'function')
+      ? emptyAnswerHint(prov.label, prov.model, 'there was no score to read') : '';
+    parseError = empty || hint
       || 'The evaluation came back in a format this app could not read, so there is no score to show.';
   }
 

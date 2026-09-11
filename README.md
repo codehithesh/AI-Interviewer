@@ -69,6 +69,13 @@ straight back. Your answers, the notices and the final evaluation are never mask
 Only `message.content` is ever read — any `reasoning_content` or chain-of-thought a
 model returns is discarded and never rendered, logged or spoken.
 
+A reasoning model will sometimes answer with **private reasoning and no answer at all**:
+`content` is `""` while `reasoning_content` holds a full plan for the question it never
+wrote. It is a normal HTTP 200 with `finish_reason: "stop"`, so there is nothing wrong
+with your key, your credit or your connection. The app asks once more with an explicit
+instruction to write the answer, and if that comes back empty too it says so plainly,
+naming the model — the reasoning itself is still never shown or spoken.
+
 The interviewer asks a JSON-capable model for JSON (`{"type","question","reason"}`) and
 every provider that accepts `response_format` is made to honour it. A model that cannot
 be — `deepseek-reasoner` is the one shipped here — is asked for the spoken sentence

@@ -8,6 +8,76 @@
 
 'use strict';
 
+// ============================================================
+// "It thought and said nothing" — the empty answer
+// ============================================================
+// A reasoning model can spend its whole reply on private reasoning and then stop with
+// an EMPTY `content`. This is a real capture, HTTP 200, deepseek-flash:
+//
+//   {"message":{"role":"assistant","content":"",
+//               "reasoning_content":"The candidate is being uncooperative… I already
+//                asked a SQL question twice… Let me ask a different, concrete SQL
+//                question… Keep it brief, spoken."},
+//    "finish_reason":"stop",
+//    "usage":{"completion_tokens":159,
+//             "completion_tokens_details":{"reasoning_tokens":159}}}
+//
+// Everything the model produced is in `reasoning_content`; `content` — the only field
+// this app reads — is "". Note what this is NOT: not a quota problem, not a bad key,
+// not a network failure, and not truncation. `finish_reason` is "stop" and the reply
+// is complete, just empty of anything the candidate could hear. The model planned the
+// question and never wrote it down.
+//
+// The reasoning text is DISCARDED and never shown, spoken or logged: the interviewer
+// is instructed never to reveal its reasoning, and a private planning note is not
+// something to read aloud as the next interview question. Only its PRESENCE is
+// recorded, as `reasoningOnly`, so a caller can say what went wrong without quoting it.
+//
+// The empty answer is handled in two steps, and the order matters:
+//
+//  · RETRY ONCE WITH A NUDGE. Cheap, invisible when it works, and it frequently does:
+//    the model is asked again with an explicit instruction that this reply must contain
+//    the answer itself, which is precisely the step it skipped.
+//  · THEN REPORT IT AS WHAT IT IS. If the retry is empty too, the turn is a genuine
+//    failure, and the callers say so in those terms (emptyAnswerHint in
+//    js/providers.js) instead of as a vague empty reply.
+//
+// The nudge goes into the EXISTING system message rather than into a new one, so every
+// provider sees the arrangement it already accepted. A second system message, or a
+// second consecutive user turn, is rejected by some providers, and Anthropic's Messages
+// API requires the roles to alternate.
+const ANSWER_NUDGE = 'You must write your answer in this reply. Do not use the whole reply for private reasoning: any reasoning has to be followed by the answer itself, written out in the form asked for above.';
+
+function nudgedSystemText(system) {
+  const base = typeof system === 'string' ? system.trim() : '';
+  return base ? base + '\n\n' + ANSWER_NUDGE : ANSWER_NUDGE;
+}
+
+// The messages for a nudged retry, with the instruction added to the system turn. A
+// copy is returned, so the caller's history — and the transcript on screen — is
+// untouched by a retry the user never sees.
+function withAnswerNudge(messages) {
+  const out = (messages || []).map((m) => ({ ...m }));
+  const sys = out.filter((m) => m.role === 'system')[0];
+  if (sys) sys.content = nudgedSystemText(sys.content);
+  // No system turn to extend (a bare completion call): the nudge leads as a user turn,
+  // which is valid for every provider here.
+  else out.unshift({ role: 'user', content: ANSWER_NUDGE });
+  return out;
+}
+
+// Call once; if the model came back with no text at all, call once more with the nudge.
+// `call(nudge)` returns { text, reasoningOnly }. Both-empty is reported rather than
+// thrown: it is a model failure the caller describes in words, not an exception.
+async function answerOrRetry(call) {
+  const first = await call(false);
+  if (first.text.trim()) return first;
+  const second = await call(true);
+  if (second.text.trim()) return second;
+  // Keep whichever attempt saw private reasoning, so the caller can name the real cause.
+  return { text: '', reasoningOnly: !!(first.reasoningOnly || second.reasoningOnly) };
+}
+
 // One chat completion against the chosen provider.
 // prov = { name, label, key, model } as returned by activeProvider().
 async function callChat(prov, model, messages) {
@@ -30,7 +100,9 @@ async function callChat(prov, model, messages) {
     const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
     const conv = messages.filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
-    const call = async (m) => {
+    const call = async (m, nudge) => {
+      // The nudge joins the system prompt here, for the reason given above.
+      const sys = nudge ? nudgedSystemText(system) : system;
       const resp = await fetch(cfg.endpoint, {
         method: 'POST',
         headers: {
@@ -42,7 +114,7 @@ async function callChat(prov, model, messages) {
         body: JSON.stringify({
           model: m,
           max_tokens: 8192,
-          ...(system ? { system } : {}),
+          ...(sys ? { system: sys } : {}),
           messages: conv,
         }),
       });
@@ -53,13 +125,20 @@ async function callChat(prov, model, messages) {
         throw err;
       }
       const data = await resp.json();
-      const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
-      return { text: unwrapModelText(text) };
+      const blocks = data.content || [];
+      const text = blocks.filter((b) => b.type === 'text').map((b) => b.text).join('');
+      return {
+        text: unwrapModelText(text),
+        // A thinking block is dropped by the filter above; this records that it was the
+        // whole reply, without keeping or returning any of it. See the note above.
+        reasoningOnly: !text.trim()
+          && blocks.some((b) => b && (b.type === 'thinking' || b.type === 'redacted_thinking')),
+      };
     };
-    try { return await call(model); }
+    try { return await answerOrRetry((nudge) => call(model, nudge)); }
     catch (firstErr) {
       if (firstErr.status === 400 && cfg.fallback && cfg.fallback !== model) {
-        try { return await call(cfg.fallback); } catch { /* keep original error */ }
+        try { return await answerOrRetry((nudge) => call(cfg.fallback, nudge)); } catch { /* keep original error */ }
       }
       throw firstErr;
     }
@@ -68,10 +147,10 @@ async function callChat(prov, model, messages) {
   // ---- OpenAI-compatible chat completions ----
   const wantsJson = !!cfg.json && !(cfg.noJson ? cfg.noJson(model) : false);
   const wantsTemp = !!cfg.temp && !(cfg.noTemp ? cfg.noTemp(model) : false);
-  const attempt = async (m, jsonFmt, temp) => {
+  const attempt = async (m, jsonFmt, temp, nudge) => {
     const body = {
       model: m,
-      messages,
+      messages: nudge ? withAnswerNudge(messages) : messages,
       ...(temp ? { temperature: 0.2 } : {}),
       ...(jsonFmt ? { response_format: { type: 'json_object' } } : {}),
     };
@@ -87,24 +166,33 @@ async function callChat(prov, model, messages) {
       throw err;
     }
     const data = await resp.json();
-    const text = (data.choices && data.choices[0] && data.choices[0].message)
-      ? (data.choices[0].message.content || '')
-      : '';
+    const message = (data.choices && data.choices[0] && data.choices[0].message) || null;
+    const text = (message && typeof message.content === 'string') ? message.content : '';
     // An envelope that arrived as the CONTENT — what a relay hands back — is peeled
     // off here so both callers see the model's own text. See unwrapModelText().
-    return { text: unwrapModelText(text) };
+    return {
+      text: unwrapModelText(text),
+      // `content` empty while `reasoning_content` is not is the model's "thinking out
+      // loud then losing its nerve" case. The reasoning is read for this one boolean
+      // and then dropped — it is never returned, shown or spoken. See the note above.
+      reasoningOnly: !text.trim() && !!(message && typeof message.reasoning_content === 'string'
+        && message.reasoning_content.trim()),
+    };
   };
+  // Every path that can succeed goes through here, so a model that answers with an
+  // empty content is nudged and retried whatever route the request took.
+  const answered = (m, jsonFmt, temp) => answerOrRetry((nudge) => attempt(m, jsonFmt, temp, nudge));
   try {
-    return await attempt(model, wantsJson, wantsTemp);
+    return await answered(model, wantsJson, wantsTemp);
   } catch (firstErr) {
     let e = firstErr;
     // A param (temperature / response_format) this model rejects → retry bare.
     if (e.status === 400 && (wantsJson || wantsTemp)) {
-      try { return await attempt(model, false, false); } catch (e2) { e = e2; }
+      try { return await answered(model, false, false); } catch (e2) { e = e2; }
     }
     // A model your account can't use → retry the provider's safe fallback, bare.
     if (e.status === 400 && cfg.fallback && cfg.fallback !== model) {
-      try { return await attempt(cfg.fallback, false, false); } catch { /* keep original error */ }
+      try { return await answered(cfg.fallback, false, false); } catch { /* keep original error */ }
     }
     throw e;
   }

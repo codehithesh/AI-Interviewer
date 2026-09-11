@@ -601,14 +601,16 @@ async function requestInterviewerTurn() {
   // session.
   if (token !== sessionId || state.view !== 'live') return;
 
-  applyInterviewerReply(reply && reply.text, prov);
+  applyInterviewerReply(reply && reply.text, prov, !!(reply && reply.reasoningOnly));
   updateControls();
 }
 
 // Render, record and speak one interviewer turn. `prov` is the provider the reply
 // actually came from, which is what lets a failure name the model to switch away
-// from — see the note on prose below.
-function applyInterviewerReply(raw, prov) {
+// from — see the note on prose below. `reasoningOnly` reports that the model answered
+// with private reasoning and no text at all (js/api.js), which is a different failure
+// from an unreadable reply and gets a different message.
+function applyInterviewerReply(raw, prov, reasoningOnly) {
   const parsed = parseInterviewerReply(raw);
 
   if (!parsed.question) {
@@ -620,6 +622,13 @@ function applyInterviewerReply(raw, prov) {
     // own wording is the honest one. The clause passed in is interpolated verbatim —
     // see the note on `what` in js/providers.js.
     const p = prov || (typeof activeProvider === 'function' ? activeProvider() : null);
+    // An empty reply from a model that DID write reasoning is its own story, and the
+    // transport has already retried it once. Saying "empty reply" there sends the user
+    // looking at their key and their network, neither of which is at fault.
+    if (reasoningOnly && p && typeof emptyAnswerHint === 'function') {
+      reportTurnError(emptyAnswerHint(p.label, p.model, 'there was nothing to ask the candidate'), { retry: true });
+      return false;
+    }
     const hint = (p && typeof structuredReplyHint === 'function')
       ? structuredReplyHint(p.name, p.label, p.model, 'the next question could not be read') : '';
     reportTurnError(hint || parsed.error, { retry: true });
