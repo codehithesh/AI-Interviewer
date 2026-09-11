@@ -137,3 +137,5 @@ explaining *why* the file exists, and markup carried in the module that owns it.
 ## License
 
 See [LICENSE](LICENSE).
+
+Interviwer photo by [Vitaly Gariev](https://www.pexels.com/photo/confident-young-woman-with-glasses-outdoors-36712866/)
