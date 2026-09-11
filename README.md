@@ -62,18 +62,23 @@ straight back. Your answers, the notices and the final evaluation are never mask
 | OpenAI | Chat Completions |
 | Anthropic | Messages API; direct browser access is requested explicitly |
 | Google Gemini | OpenAI-compatible endpoint |
-| DeepSeek | `deepseek-reasoner` cannot be sent `response_format`, so it answers in prose; pick `deepseek-chat` for a scored evaluation |
+| DeepSeek | `deepseek-reasoner` cannot be sent `response_format`; it is asked for prose instead, so pick `deepseek-chat` for a scored evaluation |
 | Moonshot (Kimi) | OpenAI-compatible |
 | Mistral | OpenAI-compatible |
 
 Only `message.content` is ever read — any `reasoning_content` or chain-of-thought a
 model returns is discarded and never rendered, logged or spoken.
 
-The interviewer is asked for JSON (`{"type","question","reason"}`) and every provider
-that accepts `response_format` is made to honour it. Where a model cannot be —
-`deepseek-reasoner` is the one shipped here — a **plain-spoken sentence is accepted as
-a complete turn**: it is shown and read aloud exactly like a JSON reply, with no
-warning, because a question is a question. You lose only the private `reason` note.
+The interviewer asks a JSON-capable model for JSON (`{"type","question","reason"}`) and
+every provider that accepts `response_format` is made to honour it. A model that cannot
+be — `deepseek-reasoner` is the one shipped here — is asked for the spoken sentence
+directly instead of for JSON in words, because a reasoning model's chain of thought and
+its answer share one output budget and a JSON object is what gets cut off. Either way a
+**plain-spoken sentence is accepted as a complete turn**: it is shown and read aloud
+exactly like a JSON reply, with no warning, because a question is a question. You lose
+only the private `reason` note. A truncated reply object is read for the question it
+still contains rather than thrown away.
+
 The evaluation is different: a scorecard needs an object, so on such a model the
 scoring fails and says so, naming a model that works.
 

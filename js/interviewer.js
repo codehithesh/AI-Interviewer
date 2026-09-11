@@ -8,11 +8,13 @@
 //   · buildInterviewerPrompt(config) — §10.1's brief, seeded from the interview
 //     configuration. An absent field is simply NOT MENTIONED, so an unconfigured
 //     interview still produces a complete brief instead of a prompt full of blanks.
+//     The reply format it ends with depends on the model: JSON where `response_format`
+//     is available, plain spoken text where it is not — see PLAIN_REPLY_FORMAT_RULES.
 //   · parseInterviewerReply(text)    — §10.2's `{type,question,reason}`. The model
-//     is asked for JSON, but a model is not a schema: a fence, a stray sentence or
-//     plain prose all arrive in practice, and every one of them is read. Prose is a
-//     complete turn, not a degraded one — only text with no question in it fails,
-//     and a failed turn is reported, never thrown.
+//     is asked for JSON, but a model is not a schema: a fence, a stray sentence, a
+//     truncated object or plain prose all arrive in practice, and every one of them is
+//     read. Prose is a complete turn, not a degraded one — only text with no question
+//     in it fails, and a failed turn is reported, never thrown.
 //   · trimHistory()                  — §10.3. The system prompt is always kept; when
 //     the cap is reached the OLDEST non-system turns go first, so a long interview
 //     forgets its beginning rather than its brief.
@@ -69,10 +71,39 @@ const REPLY_FORMAT_RULES = [
   '- "reason" is a short private note to yourself about why you are asking this. It is never shown to the candidate and never spoken. Keep it under 20 words.',
 ].join('\n');
 
+// The same request for a model that cannot be sent `response_format` (js/providers.js
+// exempts it via `noJson`). Two reasons this is a separate, simpler format rather than
+// the JSON one asked for in words:
+//
+//  · The JSON buys almost nothing here. The parser reads a plain sentence as a
+//    complete turn already (parseInterviewerReply), and `reason` — the only thing the
+//    envelope adds — is never shown or spoken. So the only field that matters is the
+//    one a sentence conveys on its own.
+//  · Asking for JSON anyway is what BREAKS these models. A reasoning model spends most
+//    of a single output budget on its chain of thought, and the JSON object is what
+//    runs out of room last: the reply arrives cut off mid-string, starts with '{', and
+//    is the one shape the parser cannot read as prose. The truncated-envelope salvage
+//    in parseInterviewerReply exists for models that ignore this instruction, but the
+//    reliable fix is not to generate the wreckage in the first place.
+//
+// Consequence worth knowing: the format is frozen at [Start interview] with the rest
+// of the brief (§4.1), so switching to a JSON-capable model mid-interview keeps this
+// prompt. That is harmless — a prose reply is read either way, and a model that emits
+// the JSON anyway is read too.
+const PLAIN_REPLY_FORMAT_RULES = [
+  'REPLY FORMAT',
+  'Reply with the words you want to say next and nothing else — no JSON, no field names, no code fence.',
+  'On the first turn that is your greeting plus your first question. After that it is the single question you are asking.',
+  'Everything you write is read aloud to the candidate, so write only what you would say out loud.',
+].join('\n');
+
 // The brief for one interview, built from the §12 snapshot. Every field is optional:
 // role, duration, question cap and the seed prompt are only mentioned when they are
 // set, so the default configuration still reads as a complete brief.
-function buildInterviewerPrompt(cfg) {
+//
+// `plainText` asks for the prose format above instead of the JSON one, and is set by
+// wipeHistory() when the model in Settings cannot be sent `response_format`.
+function buildInterviewerPrompt(cfg, plainText) {
   const c = cfg || {};
   const brief = [];
 
@@ -92,15 +123,28 @@ function buildInterviewerPrompt(cfg) {
 
   const parts = [INTERVIEWER_RULES];
   if (brief.length) parts.push('THE BRIEF FOR THIS INTERVIEW\n' + brief.join('\n'));
-  parts.push(REPLY_FORMAT_RULES);
+  parts.push(plainText ? PLAIN_REPLY_FORMAT_RULES : REPLY_FORMAT_RULES);
   return parts.join('\n\n');
+}
+
+// Does the model selected in Settings have to be asked in words? Answered from the
+// live Settings fields, the same source the request itself uses, so the prompt and
+// the request can never disagree about whether JSON is available. Any failure to
+// reach a provider (the chat is wired before the saved settings have loaded) falls
+// back to the JSON format, which every model is at least asked for in words today.
+function activeModelNeedsProse() {
+  try {
+    const p = typeof activeProvider === 'function' ? activeProvider() : null;
+    if (!p) return false;
+    return modelNeedsJsonInWords(p.name, p.model) === true;
+  } catch { return false; }
 }
 
 // Start a fresh history. The system prompt is built from the snapshot taken at
 // [Start interview] and then never rebuilt, so editing Settings mid-interview
 // applies to the next interview rather than rewriting the running brief (§4.1).
 function wipeHistory(cfg) {
-  state.messages = [{ role: 'system', content: buildInterviewerPrompt(cfg) }];
+  state.messages = [{ role: 'system', content: buildInterviewerPrompt(cfg, activeModelNeedsProse()) }];
 }
 
 function pushHistory(role, content) {
@@ -139,12 +183,79 @@ function historyForRequest() {
 // The invariant at the bottom is the important one: no object is ever spoken to the
 // candidate. A reply beginning with '{' that yields no question is reported as an
 // error turn, never read aloud as `{"id":"chatcmpl-…`.
+//
+// The one case that needed a third layer is a reply that is JSON but is not PARSEABLE
+// JSON — above all a truncated one, which is what a model produces when it runs out of
+// output budget mid-object (a reasoning model writing JSON after a long chain of
+// thought is the usual author of this). salvageFromJson() reads the question field
+// straight out of such text, so the turn is kept instead of being reported. It does
+// not weaken the invariant: it returns one named string VALUE, never the surrounding
+// object.
 
 // Does this read like a question rather than like broken JSON? A reply that starts
 // with '{' or '[' is either a reply object or a mangled one, and neither is
 // something to show the candidate as the question.
 function usableAsQuestion(text) {
   return !!text && !/^[[{]/.test(text);
+}
+
+// The fields a reply might keep its question in, best first. `next_question` is here
+// because a model that half-remembers the format invents that name, and `content`/
+// `text` are what a relay's envelope calls the same thing.
+const SALVAGE_KEYS = ['question', 'next_question', 'content', 'text'];
+
+// Read a question out of JSON this app could not parse. Returns '' when there is
+// nothing to read, which is what keeps the invariant above intact: an error envelope
+// like `{"id":"chatcmpl-…` names no question field and is still reported, never
+// spoken.
+//
+// Two shapes are rescued, and both are common enough to matter:
+//
+//   · TRUNCATED — `{"type":"question","question":"Tell me about a time you` — the
+//     shape a model leaves behind when its output budget runs out mid-object, which a
+//     reasoning model writing JSON after a long chain of thought does routinely. The
+//     value has no closing quote, so the reader takes the rest of the text: half a
+//     question, delivered, beats a perfect one thrown away.
+//   · THE WRONG KEY — `{"next_question":"…"}` parses perfectly and is discarded by
+//     replyFrom(), because it is not the field the format asked for.
+//
+// Only a string value is ever returned, and only for a key in SALVAGE_KEYS, so a
+// stray `"content":null` or a genuine error object yields ''.
+function salvageFromJson(text) {
+  if (typeof text !== 'string') return '';
+  for (let k = 0; k < SALVAGE_KEYS.length; k++) {
+    const m = new RegExp('"' + SALVAGE_KEYS[k] + '"\\s*:\\s*"').exec(text);
+    if (!m) continue;
+
+    let out = '';
+    for (let i = m.index + m[0].length; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '"') break;
+      if (ch === '\\') {
+        const next = text[i + 1];
+        // A backslash at the very end is a truncated escape: drop it rather than
+        // leaving a stray character in the question.
+        if (next === undefined) break;
+        if (next === 'n') out += '\n';
+        else if (next === 't') out += '\t';
+        else if (next === 'r') out += '';
+        else if (next === 'u') {
+          // \uXXXX — kept as the character it names, so an escaped apostrophe or
+          // dash does not reach the candidate as "u2019".
+          const hex = text.slice(i + 2, i + 6);
+          if (/^[0-9a-fA-F]{4}$/.test(hex)) { out += String.fromCharCode(parseInt(hex, 16)); i += 5; continue; }
+          out += next;
+        } else out += next;
+        i++;
+        continue;
+      }
+      out += ch;
+    }
+
+    const value = out.trim();
+    if (value) return value;
+  }
+  return '';
 }
 
 // A trimmed string, or '' for anything that is not a non-empty string. Most fields
@@ -282,18 +393,23 @@ function replyFrom(obj, depth) {
 //   ok:true    a question was found — as a reply object, or as plain prose
 //   error      nothing usable — the caller reports it and the interview stays alive
 //
-// PLAIN PROSE IS A NORMAL, HEALTHY REPLY, not a fallback to be apologised for. The
-// format is only ever requested in words (`REPLY_FORMAT_RULES`), and for models that
-// cannot be sent `response_format` — deepseek-reasoner is exempted in js/providers.js
-// — words are all there is. A reasoning model that answers "Hi there, let's drop to
-// something simpler…" has done exactly its job: it replied with the sentence it wants
-// spoken next. The JSON envelope only adds the private `reason` note and a stable
-// field to read; it does not make the turn valid, and its absence does not make the
-// turn broken. So the two cases are read the same way here and the caller renders
-// them the same way, with no notice, because there is nothing wrong to report.
+// PLAIN PROSE IS A NORMAL, HEALTHY REPLY, not a fallback to be apologised for. Two
+// things produce it, and both are read here without complaint: a JSON-capable model
+// that is asked in words and answers in a sentence anyway, and a model that cannot be
+// sent `response_format` (deepseek-reasoner is exempted in js/providers.js), which is
+// now asked for prose outright — see PLAIN_REPLY_FORMAT_RULES. A reasoning model that
+// answers "Hi there, let's drop to something simpler…" has done exactly its job: it
+// replied with the sentence it wants spoken next. The JSON envelope only adds the
+// private `reason` note and a stable field to read; it does not make the turn valid,
+// and its absence does not make the turn broken. So the two cases are read the same
+// way here and the caller renders them the same way, with no notice, because there is
+// nothing wrong to report.
 //
-// What IS a failure: an object this app cannot get a question out of (mangled or
-// truncated JSON). That is reported rather than read aloud as `{"id":"chatcmpl-…`.
+// What IS a failure: text this app cannot get a question out of at all — an error
+// envelope, or a reply object whose question field is empty. That is reported rather
+// than read aloud as `{"id":"chatcmpl-…`. A truncated object is NOT a failure: the
+// question is salvaged out of it (salvageFromJson) because that is the one shape where
+// the question is usually sitting there in full.
 function parseInterviewerReply(text) {
   const raw = typeof text === 'string' ? text.trim() : '';
   if (!raw) {
@@ -308,6 +424,11 @@ function parseInterviewerReply(text) {
     if (reply.question) {
       return { ok: true, question: reply.question, reason: reply.reason, error: '' };
     }
+    // A parsed object with no question in it. Before reporting it, read the raw text
+    // instead: an object that parsed can still hold a question under a name the
+    // parser does not read, and a nested `content` string can still be truncated.
+    const salvaged = salvageFromJson(raw);
+    if (salvaged) return { ok: true, question: salvaged, reason: reply.reason, error: '' };
     // A parsed object with no question anywhere in it — including inside a provider
     // envelope. Its `content` was already tried, so there is nothing left to read:
     // fail, rather than speak JSON to the candidate.
@@ -325,6 +446,12 @@ function parseInterviewerReply(text) {
   if (usableAsQuestion(bare)) {
     return { ok: true, question: bare, reason: '', error: '' };
   }
+
+  // Starts with a brace, so it is JSON that would not parse: the truncated-reply case.
+  // The question is very often still sitting in there in full, so read it out rather
+  // than lose the turn — see salvageFromJson().
+  const salvaged = salvageFromJson(bare);
+  if (salvaged) return { ok: true, question: salvaged, reason: '', error: '' };
 
   return {
     ok: false,

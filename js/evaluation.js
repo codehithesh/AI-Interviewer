@@ -340,9 +340,10 @@ async function runEvaluation() {
     // this is a real dead end — and for one class of model it is a PREDICTABLE one:
     // a reasoning model that cannot be sent `response_format` answers freely, and no
     // amount of retrying changes that. Naming the model and the model to switch to
-    // turns a wall into a next step. See structuredReplyHint() in js/providers.js.
+    // turns a wall into a next step. See structuredReplyHint() in js/providers.js —
+    // `what` is the whole clause, because the hint interpolates it verbatim.
     const hint = typeof structuredReplyHint === 'function'
-      ? structuredReplyHint(prov.name, prov.label, prov.model, 'there is no score to read') : '';
+      ? structuredReplyHint(prov.name, prov.label, prov.model, 'there was no score to read') : '';
     parseError = hint
       || 'The evaluation came back in a format this app could not read, so there is no score to show.';
   }

@@ -143,9 +143,11 @@ function jsonCapableModel(providerId, model) {
 // model the user is on and a model to switch to. Returns '' when the model was not
 // the problem, so callers can keep their own wording in that case.
 //
-// `what` states what could not be read, because the two callers want different words
-// for the same cause: the evaluation lost a scorecard, the interviewer lost a
-// question. Both then name the same fix.
+// `what` is the WHOLE clause describing what was lost, because only the caller knows
+// which feature lost it: the evaluation lost a scorecard, the interviewer lost a
+// question. It is interpolated verbatim — a fixed tail here would say it twice, which
+// is exactly the bug this signature exists to prevent (the caller's "the next question
+// could not be read" once came out as "…could not be read could not be read").
 //
 // It deliberately stops short of "press Try again": the callers append their own
 // retry line, and this message already ends on the switch that makes a retry
@@ -153,9 +155,34 @@ function jsonCapableModel(providerId, model) {
 function structuredReplyHint(providerId, label, model, what) {
   if (!modelNeedsJsonInWords(providerId, model)) return '';
   const alternative = jsonCapableModel(providerId, model);
-  return `"${model}" cannot be asked for JSON output, so it answered freely and ${what || 'the reply'} could not be read. `
+  return `"${model}" cannot be asked for JSON output, so it answered freely, and ${what || 'the reply could not be read'}. `
     + `Open Settings and pick ${alternative ? `"${alternative}"` : 'a model that supports JSON output'}`
-    + ` for ${label || 'this provider'}`;
+    + ` for ${label || 'this provider'} to fix that.`;
+}
+
+// The sibling of structuredReplyHint for a different cause: the model reasoned and then
+// wrote nothing at all. `content` was empty while `reasoning_content` was not — a
+// reasoning model that planned the answer privately and never produced it. See the
+// note at the top of js/api.js for the real response this comes from.
+//
+// This is worth naming precisely, because the failure looks like the app's fault: the
+// turn vanishes with no question on screen, and the honest-looking guesses (bad key,
+// no credit, dead network) are all wrong. Two facts fix that, and both are in the
+// message — the model is what failed, and the app has ALREADY retried it once with an
+// explicit instruction to write the answer, so the user is not being told to do
+// something the app skipped doing itself.
+//
+// `what` is interpolated verbatim, exactly as in structuredReplyHint, because only the
+// caller knows what was lost.
+//
+// The model's reasoning is deliberately not quoted, summarised or hinted at: it is
+// private by design (INTERVIEWER_RULES forbids revealing it), and it is discarded at
+// the transport before it ever reaches here.
+function emptyAnswerHint(label, model, what) {
+  return `"${model}" spent its whole reply on private reasoning and never wrote an answer, `
+    + `so ${what || 'there was nothing to show'}. This app asked it a second time and got the same empty reply. `
+    + `That is the model rather than your key or this page — press Try again, or pick a model that answers `
+    + `directly under ${label || 'this provider'} in Settings`;
 }
 
 // ---------- the provider inputs rendered in Settings ----------

@@ -617,7 +617,8 @@ function applyInterviewerReply(raw, prov) {
     // that cannot be sent `response_format` (js/providers.js), an unreadable reply is
     // the predictable outcome rather than a fluke, so say which model and which way
     // out. structuredReplyHint() returns '' for every other model, where the parser's
-    // own wording is the honest one.
+    // own wording is the honest one. The clause passed in is interpolated verbatim —
+    // see the note on `what` in js/providers.js.
     const p = prov || (typeof activeProvider === 'function' ? activeProvider() : null);
     const hint = (p && typeof structuredReplyHint === 'function')
       ? structuredReplyHint(p.name, p.label, p.model, 'the next question could not be read') : '';
