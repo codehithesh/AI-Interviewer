@@ -63,7 +63,7 @@ straight back. Your answers, the notices and the final evaluation are never mask
 | OpenAI | Chat Completions |
 | Anthropic | Messages API; direct browser access is requested explicitly |
 | Google Gemini | OpenAI-compatible endpoint |
-| DeepSeek | Chat Completions; both current models support `response_format` |
+| DeepSeek | Chat Completions; the current model supports `response_format` |
 | Moonshot (Kimi) | OpenAI-compatible |
 | Grok | OpenAI-compatible (xAI) |
 | Qwen | Alibaba Model Studio (Singapore), OpenAI-compatible |
@@ -82,7 +82,7 @@ naming the model — the reasoning itself is still never shown or spoken.
 
 The interviewer asks a JSON-capable model for JSON (`{"type","question","reason"}`) and
 every provider that accepts `response_format` is made to honour it. A model that cannot
-be — declared per provider with `noJson`, though none of the eight shipped today needs
+be — declared per provider with `noJson`, though none of the nine shipped today needs
 it — is asked for the spoken sentence
 directly instead of for JSON in words, because a reasoning model's chain of thought and
 its answer share one output budget and a JSON object is what gets cut off. Either way a

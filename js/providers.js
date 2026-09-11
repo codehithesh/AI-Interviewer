@@ -17,7 +17,8 @@
 // rather than a dead end (Settings' model field is free text) — but they are worth
 // re-checking before each release, because every provider retires models on its own
 // schedule. OpenAI's o3-mini and o4-mini were removed from this list for exactly that
-// reason: both shut down on 2026-10-23.
+// reason: both shut down on 2026-10-23. DeepSeek's deepseek-v4-pro went the same way —
+// see the note on that provider for why it was dropped while the name still resolves.
 
 'use strict';
 
@@ -72,13 +73,21 @@ const PROVIDERS = [
     endpoint: 'https://api.deepseek.com/chat/completions',
     style: 'chat', json: true, temp: true,
     fallback: 'deepseek-flash',
-    // deepseek-chat / deepseek-reasoner are retired names. Both current models support
-    // response_format, so neither needs the `noJson` exemption the old reasoner did.
-    hint: 'Both models think by default; temperature is accepted but ignored in thinking mode.',
+    // deepseek-chat / deepseek-reasoner are retired names. The current model supports
+    // response_format, so it needs no `noJson` exemption the way the old reasoner did.
+    //
+    // deepseek-v4-pro is deliberately NOT offered any more, even though sending that ID
+    // still works today. DeepSeek's changelog for 2026-09-10 states that V4.1 Flash now
+    // beats V4 Pro on performance, cost, speed and total time, and that from 12:00
+    // Beijing time on 2026-09-14 every request to `deepseek-v4-pro` is routed to V4.1
+    // Flash and billed as Flash while V4 Pro is retired in an orderly manner. Offering
+    // it here would advertise a second model that silently answers as the first — and
+    // the free-text field is the escape hatch if DeepSeek ships V4.1 Pro and the ID is
+    // worth suggesting again.
+    hint: 'Thinks by default; one current model, so the field is free text if DeepSeek ships another.',
     ph: 'sk-...',
     models: [
-      { v: 'deepseek-flash', l: 'deepseek-flash (fast)' },
-      { v: 'deepseek-v4-pro', l: 'deepseek-v4-pro (deep reasoning)' },
+      { v: 'deepseek-flash', l: 'deepseek-flash (V4.1 Flash — the current model)' },
     ],
   },
   {
@@ -162,7 +171,7 @@ const PROVIDER_MAP = Object.fromEntries(PROVIDERS.map((p) => [p.id, p]));
 // JSON in WORDS ONLY, and a reasoning model asked in words may well answer in prose.
 //
 // NO PROVIDER SHIPPED TODAY NEEDS THIS. Every model listed above accepts
-// `response_format` — including the two DeepSeek models, where the retired
+// `response_format` — including DeepSeek's current model, where the retired
 // `deepseek-reasoner` was the original reason this mechanism exists. It is kept because
 // it is a real provider capability and the alternative is rediscovering it at runtime;
 // a future model that rejects the parameter declares itself here and the rest of the
@@ -180,8 +189,8 @@ const PROVIDER_MAP = Object.fromEntries(PROVIDERS.map((p) => [p.id, p]));
 // guess. Detection is by the same `noJson` predicate the request itself uses, so the
 // advice can never disagree with what was actually sent.
 function modelNeedsJsonInWords(providerId, model) {
-  const cfg = PROVIDER_MAP[providerId];
-  if (!cfg || !cfg.json || !cfg.noJson) return false;
+  const cfg = resolveProvider(providerId);
+  if (!cfg.json || !cfg.noJson) return false;
   return !!cfg.noJson(model);
 }
 
@@ -243,6 +252,31 @@ function emptyAnswerHint(label, model, what) {
     + `directly under ${label || 'this provider'} in Settings`;
 }
 
+// ---------- resolving the selected provider ----------
+// `state.provider` is the single field every request and the whole Settings card
+// highlight key off, and it is the one piece of saved state that can name something
+// that no longer exists: a provider culled from PROVIDERS (Mistral once), or a
+// hand-edited localStorage entry. shapePrefs() (js/store.js) and normalizeProvider()
+// below already repair that on the way in, so this is the backstop for the window
+// before they run and for any future write path that forgets.
+//
+// resolveProvider() reports what is actually in force without touching state, which is
+// what the read-only callers want (modelNeedsJsonInWords must stay side-effect free —
+// it is called while building an error message). activeProvider() is the one caller
+// that should also CORRECT `state`, in case this is the only reason nothing is
+// selected: it hands out the key and model of the provider it names, so leaving the
+// stale id in place would let activeProvider() and the card highlight disagree.
+function resolveProvider(id) {
+  return PROVIDER_MAP[id] || PROVIDERS[0];
+}
+
+// Keep `state.provider` naming a provider that exists. Returns true when it changed.
+function normalizeProvider() {
+  if (PROVIDER_MAP[state.provider]) return false;
+  state.provider = PROVIDERS[0].id;
+  return true;
+}
+
 // ---------- the provider inputs rendered in Settings ----------
 function providerInput(id) { return document.getElementById('key-' + id); }
 function providerModel(id) { return document.getElementById('model-' + id); }
@@ -260,8 +294,13 @@ function providerModel(id) { return document.getElementById('model-' + id); }
 // The fields are read defensively: the chat is wired before the saved settings
 // have loaded, so a message sent inside that window must report a missing key
 // rather than throw on a provider card that does not exist yet.
+//
+// An id that matches no provider is corrected here rather than dereferenced: without
+// that this threw on `cfg.id` and took down every caller — the whole point of reading
+// the config on each request is that a bad one must stay fixable. See resolveProvider().
 function activeProvider() {
-  const cfg = PROVIDER_MAP[state.provider];
+  const cfg = resolveProvider(state.provider);
+  state.provider = cfg.id;
   const keyEl = providerInput(cfg.id);
   const modelEl = providerModel(cfg.id);
   return {

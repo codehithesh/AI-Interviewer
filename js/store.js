@@ -72,7 +72,13 @@ function shapePrefs(raw) {
       if (key) p.keys[prov.id] = key;
     }
   }
+  // The saved id may name a provider this build no longer has (Mistral was culled), so
+  // a fallback has to land in `state` too — otherwise the id is dropped from the
+  // returned prefs while still sitting in state, and the Settings cards render with
+  // nothing highlighted. normalizeProvider() (js/providers.js) is the one place that
+  // decides what a missing provider means, and it leaves a valid id untouched.
   if (PROVIDER_MAP[raw.provider]) p.provider = raw.provider;
+  else normalizeProvider();
   if (raw.models && typeof raw.models === 'object') {
     for (const prov of PROVIDERS) {
       const m = raw.models[prov.id];

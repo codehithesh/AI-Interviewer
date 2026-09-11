@@ -137,7 +137,11 @@ async function answerOrRetry(call) {
 // One chat completion against the chosen provider.
 // prov = { name, label, key, model } as returned by activeProvider().
 async function callChat(prov, model, messages) {
-  const cfg = PROVIDER_MAP[prov.name];
+  // resolveProvider() is the same backstop activeProvider() uses: a `prov.name` that
+  // matches nothing would otherwise take down the request before it is sent, at the
+  // `cfg.label` read below. Every header and body field that follows is built from
+  // `cfg`, so resolving once here covers all of them.
+  const cfg = resolveProvider(prov.name);
   const headers = { 'content-type': 'application/json' };
 
   // sanitizeKey() upstream means the key is always sendable by the time it gets
