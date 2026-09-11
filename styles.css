@@ -740,9 +740,25 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
    A monospace textarea with a line-number gutter. Not a permanent panel, not a
    code editor library: it opens from the composer's [+], keeps its draft while
    closed, and [Insert into answer] folds the code into the answer. Line numbers
-   and Tab indentation are hand-rolled in js/code-editor.js. */
-.code-modal { width: min(820px, 100%); height: min(640px, calc(100vh - 40px)); }
-.code-body { padding: 14px 18px 18px; }
+   and Tab indentation are hand-rolled in js/code-editor.js.
+
+   FULL SCREEN ON EVERY VIEWPORT — desktop included. It used to be an 820×640 box
+   on a wide monitor, which gave a code fragment the same room as a settings form
+   and forced a scroll inside a scroll. Writing code is the one thing this app asks
+   the user to do at length, so the editor takes the whole window at every size.
+
+   position/inset are what actually deliver that. The overlay is a padded flex box
+   that centres its modal, and the 20px gutter is right for the settings form — so
+   rather than depend on a :has() selector or a media query to strip it, the code
+   modal simply positions itself against the viewport, which ignores the overlay's
+   padding altogether. The frame's radius, border and shadow are dropped with it:
+   nothing sits behind the modal now, so there is no edge left to round. */
+.code-modal {
+  position: fixed; inset: 0;
+  width: auto; height: auto; max-width: none; max-height: none;
+  border: none; border-radius: 0; box-shadow: none;
+}
+.code-body { padding: 12px 14px 14px; }
 
 /* The frame and the vertical padding sit on the WRAPPER, not on the textarea. With
    no padding above either child, the gutter's first number and the first line of

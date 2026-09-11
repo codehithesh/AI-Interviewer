@@ -9,10 +9,10 @@
 //     configuration. An absent field is simply NOT MENTIONED, so an unconfigured
 //     interview still produces a complete brief instead of a prompt full of blanks.
 //   · parseInterviewerReply(text)    — §10.2's `{type,question,reason}`. The model
-//     is asked for JSON, but a model is not a schema: parseJsonLoose() unwraps
-//     fences and prose first, and when that still fails the raw text is used as the
-//     question if it reads like a sentence. Only when it does not does the turn
-//     fail — and a failed turn is reported, never thrown.
+//     is asked for JSON, but a model is not a schema: a fence, a stray sentence or
+//     plain prose all arrive in practice, and every one of them is read. Prose is a
+//     complete turn, not a degraded one — only text with no question in it fails,
+//     and a failed turn is reported, never thrown.
 //   · trimHistory()                  — §10.3. The system prompt is always kept; when
 //     the cap is reached the OLDEST non-system turns go first, so a long interview
 //     forgets its beginning rather than its brief.
@@ -125,55 +125,211 @@ function historyForRequest() {
 // Reading the reply
 // ============================================================
 // A model asked for JSON does not always send JSON: it wraps it in a fence, pads it
-// with a sentence, or ignores the format entirely and just asks a question. The
-// order below is the point — strict JSON first, then the raw text as a question,
-// then a plain error. Anything but the first two leaves the interview alive.
+// with a sentence, or answers in plain prose. All three are read here, and the prose
+// one is not an error path — see parseInterviewerReply below for why.
+//
+// Two layers protect this, and it is worth knowing which does what:
+//
+//  · js/api.js unwraps a provider response envelope (`{"choices":[{"message":…}]}`)
+//    at the transport, so every caller and every provider gets the model's own text.
+//  · The helpers here are the last line of defence for anything shaped differently
+//    from what the transport expected — including a reply object that arrived as a
+//    JSON STRING inside `content`, which is read by parsing it and asking again.
+//
+// The invariant at the bottom is the important one: no object is ever spoken to the
+// candidate. A reply beginning with '{' that yields no question is reported as an
+// error turn, never read aloud as `{"id":"chatcmpl-…`.
 
 // Does this read like a question rather than like broken JSON? A reply that starts
-// with '{' or '[' and would not parse is a mangled object, and showing that to the
-// candidate as the question would be worse than admitting the turn failed.
+// with '{' or '[' is either a reply object or a mangled one, and neither is
+// something to show the candidate as the question.
 function usableAsQuestion(text) {
   return !!text && !/^[[{]/.test(text);
 }
 
-// Returns { ok, question, reason, repaired, error }.
-//   ok:true    well-formed JSON with a question
-//   repaired   no usable JSON, but the raw text was shown as the question
+// A trimmed string, or '' for anything that is not a non-empty string. Most fields
+// on a model reply are optional, and this is what keeps a missing one from arriving
+// at a call site as `undefined`.
+function asText(v) {
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+// An Anthropic-style content block, or content that is a bare string.
+function contentBlockText(content) {
+  if (typeof content === 'string') return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .filter((b) => b && typeof b === 'object' && (b.type === 'text' || b.type === undefined))
+      .map((b) => (typeof b.text === 'string' ? b.text : ''))
+      .join('')
+      .trim();
+  }
+  return '';
+}
+
+// The text packed inside a provider response envelope — an OpenAI-style
+// `choices[0].message`, or a bare `{role, content}` message. Returns [] when the
+// object is not one of those, which is what keeps a genuine reply object from being
+// mistaken for an envelope. `depth` is bounded so a self-referential wrapper cannot
+// recurse forever.
+function envelopeTexts(obj, depth) {
+  if (!obj || typeof obj !== 'object') return [];
+  if (depth > 3) return [];
+
+  const out = [];
+
+  // OpenAI-compatible: choices[0].message.content, and the `text` field a
+  // completion (rather than chat) response carries.
+  const choice = Array.isArray(obj.choices) && obj.choices[0] && typeof obj.choices[0] === 'object'
+    ? obj.choices[0] : null;
+  if (choice) {
+    if (choice.message && typeof choice.message === 'object') {
+      out.push(asText(choice.message.content));
+    }
+    out.push(asText(choice.text));
+  }
+
+  // A bare message object, or a wrapper that carries the content directly.
+  if (obj.message && typeof obj.message === 'object') out.push(asText(obj.message.content));
+  out.push(asText(obj.content));
+  out.push(asText(obj.text));
+
+  // Nested one level through a wrapper like `{data:{…}}` or `{response:{…}}`.
+  ['data', 'response', 'result', 'output', 'body'].forEach((k) => {
+    if (obj[k] && typeof obj[k] === 'object') {
+      out.push(...envelopeTexts(obj[k], depth + 1));
+    }
+  });
+
+  return out.filter(Boolean);
+}
+
+// The model's `reason` note, wherever the reply kept it. Only ever read from the
+// object that carried the question, never searched for: a stray `reason` key in an
+// envelope is not the interviewer's private note.
+function reasonFrom(obj) {
+  if (!obj || typeof obj !== 'object') return '';
+  const direct = asText(obj.reason);
+  if (direct) return direct;
+  const msg = obj.message;
+  return msg && typeof msg === 'object' ? asText(msg.reason) : '';
+}
+
+// Can this string be read as an object? Used to decide whether a `content`/`text`
+// field is the answer itself or a nested reply that still has to be parsed out of it.
+// Empty when it parses but is not an object (an array or a bare number), which is not
+// something worth descending into.
+function objectFromText(text) {
+  if (typeof text !== 'string' || text.trim().charAt(0) !== '{') return null;
+  let obj = null;
+  try { obj = parseJsonLoose(text); } catch { return null; }
+  return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : null;
+}
+
+// The question inside an object, or '' if it has none. The precedence is deliberate:
+// the format's own `question` first, then a plain `content`/`text` (a model that
+// answered with "what I say next" instead of the field name), then an Anthropic
+// content array, and only then the envelope walk.
+//
+// A `content` string that is ITSELF an object is descended into rather than read out,
+// and that guard is load-bearing: a relay that wraps the reply once can leave
+// `content` holding the model's JSON, and speaking `{"type":"question",…}` to the
+// candidate would be exactly the failure this parser exists to prevent. Prose
+// content does not start with '{', so it still returns as the question.
+//
+// Returns { question, reason }. The reason travels with the object the question came
+// from, so an unwrapped reply keeps its own private note.
+function replyFrom(obj, depth) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return { question: '', reason: '' };
+  }
+  const reason = reasonFrom(obj);
+
+  const direct = asText(obj.question);
+  if (direct) return { question: direct, reason };
+
+  const text = asText(obj.content) || asText(obj.text);
+  if (text) {
+    const nested = depth < 2 ? objectFromText(text) : null;
+    if (!nested) return { question: text, reason };
+    const inner = replyFrom(nested, depth + 1);
+    if (inner.question) return inner;
+  }
+
+  const blocks = contentBlockText(obj.content);
+  if (blocks) return { question: blocks, reason };
+
+  // The envelope case: pull the text out, and if that text is itself the reply
+  // object (a model that answered with a JSON string inside `content`), read that.
+  const wrapped = envelopeTexts(obj, 0);
+  for (let i = 0; i < wrapped.length; i++) {
+    const candidate = wrapped[i];
+    if (depth < 2) {
+      const inner = objectFromText(candidate);
+      if (inner) {
+        const nested = replyFrom(inner, depth + 1);
+        if (nested.question) return nested;
+      }
+    }
+    // Not a nested reply — but it may be the question as plain text. Anything that
+    // still starts with a brace is JSON this app cannot read, and is never spoken.
+    if (usableAsQuestion(candidate)) return { question: candidate, reason };
+  }
+  return { question: '', reason };
+}
+
+// Returns { ok, question, reason, error }.
+//   ok:true    a question was found — as a reply object, or as plain prose
 //   error      nothing usable — the caller reports it and the interview stays alive
+//
+// PLAIN PROSE IS A NORMAL, HEALTHY REPLY, not a fallback to be apologised for. The
+// format is only ever requested in words (`REPLY_FORMAT_RULES`), and for models that
+// cannot be sent `response_format` — deepseek-reasoner is exempted in js/providers.js
+// — words are all there is. A reasoning model that answers "Hi there, let's drop to
+// something simpler…" has done exactly its job: it replied with the sentence it wants
+// spoken next. The JSON envelope only adds the private `reason` note and a stable
+// field to read; it does not make the turn valid, and its absence does not make the
+// turn broken. So the two cases are read the same way here and the caller renders
+// them the same way, with no notice, because there is nothing wrong to report.
+//
+// What IS a failure: an object this app cannot get a question out of (mangled or
+// truncated JSON). That is reported rather than read aloud as `{"id":"chatcmpl-…`.
 function parseInterviewerReply(text) {
   const raw = typeof text === 'string' ? text.trim() : '';
   if (!raw) {
-    return { ok: false, question: '', reason: '', repaired: false, error: 'The interviewer sent an empty reply, so that turn was skipped.' };
+    return { ok: false, question: '', reason: '', error: 'The interviewer sent an empty reply, so that turn was skipped.' };
   }
 
   let obj = null;
   try { obj = parseJsonLoose(raw); } catch { obj = null; }
 
   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-    const question = typeof obj.question === 'string' ? obj.question.trim() : '';
-    if (question) {
-      return {
-        ok: true,
-        question,
-        reason: typeof obj.reason === 'string' ? obj.reason.trim() : '',
-        repaired: false,
-        error: '',
-      };
+    const reply = replyFrom(obj, 0);
+    if (reply.question) {
+      return { ok: true, question: reply.question, reason: reply.reason, error: '' };
     }
+    // A parsed object with no question anywhere in it — including inside a provider
+    // envelope. Its `content` was already tried, so there is nothing left to read:
+    // fail, rather than speak JSON to the candidate.
+    return {
+      ok: false,
+      question: '',
+      reason: '',
+      error: 'The interviewer sent a reply this app could not read. Your answers are kept — press Try again to ask once more.',
+    };
   }
 
-  // No usable JSON. Strip a stray fence before deciding, so a fenced-but-broken
-  // object is still recognised as an object rather than read out as a question.
+  // Not JSON at all. Strip a stray fence first, so a fenced-but-broken object is
+  // still recognised as an object rather than read out as a question.
   const bare = raw.replace(/^ {0,3}(?:`{3,}|~{3,})[a-z]*[ \t]*\n?/i, '').replace(/\n? {0,3}(?:`{3,}|~{3,})[ \t]*$/, '').trim();
   if (usableAsQuestion(bare)) {
-    return { ok: false, question: bare, reason: '', repaired: true, error: '' };
+    return { ok: true, question: bare, reason: '', error: '' };
   }
 
   return {
     ok: false,
     question: '',
     reason: '',
-    repaired: false,
     error: 'The interviewer sent a reply this app could not read. Your answers are kept — press Try again to ask once more.',
   };
 }

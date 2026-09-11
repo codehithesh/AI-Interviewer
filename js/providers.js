@@ -102,6 +102,62 @@ const PROVIDERS = [
 
 const PROVIDER_MAP = Object.fromEntries(PROVIDERS.map((p) => [p.id, p]));
 
+// ---------- structured output, and what to say when a model cannot do it ----------
+// The interviewer's reply format and the evaluation's scorecard are both requested as
+// JSON, and for most models js/api.js also enforces it with `response_format`. A few
+// reasoning models reject that parameter outright — deepseek-reasoner is the one this
+// app ships — so `noJson(model)` marks them and callChat leaves it off. Such a model
+// is then asked for JSON in WORDS ONLY, and a reasoning model asked in words may well
+// answer in prose.
+//
+// What that means per feature, which is why this helper exists:
+//   · The chat turn survives prose — a sentence is a perfectly good question, and
+//     js/interviewer.js reads it as one. Nothing to report.
+//   · The evaluation does NOT: a scorecard needs an object, and prose cannot be
+//     coerced into one. That failure has to name the model and the way out, or the
+//     user is left with "a format this app could not read" and no next step.
+//
+// So a provider that runs entirely on models like this is a dead end for scoring, and
+// the message says so and points at a model that works instead of leaving the user to
+// guess. Detection is by the same `noJson` predicate the request itself uses, so the
+// advice can never disagree with what was actually sent.
+function modelNeedsJsonInWords(providerId, model) {
+  const cfg = PROVIDER_MAP[providerId];
+  if (!cfg || !cfg.json || !cfg.noJson) return false;
+  return !!cfg.noJson(model);
+}
+
+// A model that can be sent `response_format`, for a provider that has one. Prefers the
+// provider's declared fallback (already vetted as a safe, generally-available model)
+// and otherwise takes the first suggestion that is not itself words-only.
+function jsonCapableModel(providerId, model) {
+  const cfg = PROVIDER_MAP[providerId];
+  if (!cfg || !cfg.json) return '';
+  const wordsOnly = (m) => (cfg.noJson ? !!cfg.noJson(m) : false);
+  if (cfg.fallback && !wordsOnly(cfg.fallback)) return cfg.fallback;
+  const found = (cfg.models || []).filter((m) => !wordsOnly(m.v))[0];
+  return found ? found.v : '';
+}
+
+// The sentence that turns an unreadable structured reply into a next step, naming the
+// model the user is on and a model to switch to. Returns '' when the model was not
+// the problem, so callers can keep their own wording in that case.
+//
+// `what` states what could not be read, because the two callers want different words
+// for the same cause: the evaluation lost a scorecard, the interviewer lost a
+// question. Both then name the same fix.
+//
+// It deliberately stops short of "press Try again": the callers append their own
+// retry line, and this message already ends on the switch that makes a retry
+// worthwhile.
+function structuredReplyHint(providerId, label, model, what) {
+  if (!modelNeedsJsonInWords(providerId, model)) return '';
+  const alternative = jsonCapableModel(providerId, model);
+  return `"${model}" cannot be asked for JSON output, so it answered freely and ${what || 'the reply'} could not be read. `
+    + `Open Settings and pick ${alternative ? `"${alternative}"` : 'a model that supports JSON output'}`
+    + ` for ${label || 'this provider'}`;
+}
+
 // ---------- the provider inputs rendered in Settings ----------
 function providerInput(id) { return document.getElementById('key-' + id); }
 function providerModel(id) { return document.getElementById('model-' + id); }

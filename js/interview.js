@@ -601,25 +601,38 @@ async function requestInterviewerTurn() {
   // session.
   if (token !== sessionId || state.view !== 'live') return;
 
-  applyInterviewerReply(reply && reply.text);
+  applyInterviewerReply(reply && reply.text, prov);
   updateControls();
 }
 
-// Render, record and speak one interviewer turn.
-function applyInterviewerReply(raw) {
+// Render, record and speak one interviewer turn. `prov` is the provider the reply
+// actually came from, which is what lets a failure name the model to switch away
+// from — see the note on prose below.
+function applyInterviewerReply(raw, prov) {
   const parsed = parseInterviewerReply(raw);
 
   if (!parsed.question) {
-    reportTurnError(parsed.error, { retry: true });
+    // The failure is rare now that prose is read as a normal turn, and when it does
+    // happen it is usually not the user's fault to diagnose: for a reasoning model
+    // that cannot be sent `response_format` (js/providers.js), an unreadable reply is
+    // the predictable outcome rather than a fluke, so say which model and which way
+    // out. structuredReplyHint() returns '' for every other model, where the parser's
+    // own wording is the honest one.
+    const p = prov || (typeof activeProvider === 'function' ? activeProvider() : null);
+    const hint = (p && typeof structuredReplyHint === 'function')
+      ? structuredReplyHint(p.name, p.label, p.model, 'the next question could not be read') : '';
+    reportTurnError(hint || parsed.error, { retry: true });
     return false;
   }
 
-  // A reply that was not JSON but still reads as a question is used rather than
-  // thrown away; say so, because it usually means the model ignored the format and
-  // the user may want to switch models.
-  if (parsed.repaired) {
-    addNotice('The interviewer replied in the wrong format, so the text is shown exactly as it arrived. Switching model in Settings often fixes this.');
-  }
+  // No notice for a reply that arrived as prose instead of JSON. It used to carry
+  // one, and it fired on EVERY turn for any model that cannot be sent
+  // `response_format` — deepseek-reasoner above all, which is exempted in
+  // js/providers.js and so is only ever asked for JSON in words. A sentence is a
+  // complete interviewer turn; the format adds a private note, not validity. The
+  // visible result was a permanent "the interviewer replied in the wrong format"
+  // warning sitting over a transcript that was working perfectly, so the prose path
+  // is now silent and indistinguishable from the JSON one.
 
   // The displayed text is what goes into history, so the model's next turn is
   // conditioned on what the candidate actually saw and heard.

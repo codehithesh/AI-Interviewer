@@ -336,7 +336,15 @@ async function runEvaluation() {
   try {
     payload = parseJsonLoose(reply && reply.text);
   } catch {
-    parseError = 'The evaluation came back in a format this app could not read, so there is no score to show.';
+    // A scorecard cannot be read out of prose the way an interview question can, so
+    // this is a real dead end — and for one class of model it is a PREDICTABLE one:
+    // a reasoning model that cannot be sent `response_format` answers freely, and no
+    // amount of retrying changes that. Naming the model and the model to switch to
+    // turns a wall into a next step. See structuredReplyHint() in js/providers.js.
+    const hint = typeof structuredReplyHint === 'function'
+      ? structuredReplyHint(prov.name, prov.label, prov.model, 'there is no score to read') : '';
+    parseError = hint
+      || 'The evaluation came back in a format this app could not read, so there is no score to show.';
   }
 
   const result = parseError ? null : normalizeEvaluation(payload, prov.name, prov.model);

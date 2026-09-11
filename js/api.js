@@ -54,7 +54,7 @@ async function callChat(prov, model, messages) {
       }
       const data = await resp.json();
       const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
-      return { text };
+      return { text: unwrapModelText(text) };
     };
     try { return await call(model); }
     catch (firstErr) {
@@ -90,7 +90,9 @@ async function callChat(prov, model, messages) {
     const text = (data.choices && data.choices[0] && data.choices[0].message)
       ? (data.choices[0].message.content || '')
       : '';
-    return { text };
+    // An envelope that arrived as the CONTENT — what a relay hands back — is peeled
+    // off here so both callers see the model's own text. See unwrapModelText().
+    return { text: unwrapModelText(text) };
   };
   try {
     return await attempt(model, wantsJson, wantsTemp);
@@ -119,6 +121,55 @@ function parseJsonLoose(text) {
     try { return JSON.parse(t.slice(s, e + 1)); } catch { /* fall through */ }
   }
   throw new Error('model returned non-JSON output');
+}
+
+// ---------- the provider envelope ----------
+// Sometimes the text that arrives is not what the model wrote but the PROVIDER'S OWN
+// RESPONSE OBJECT, stringified: {"choices":[{"message":{"content":"…"}}]} for the
+// OpenAI-compatible providers, or an Anthropic-style content array. A relay or an
+// OpenAI-compatible shim in front of a provider can wrap the reply that way.
+//
+// This is unwrapped at the TRANSPORT layer, in callChat, and that placement is the
+// point: it covers every provider at once and every caller for free. Each caller
+// otherwise has to remember to unwrap, and the two that exist would do it
+// differently — js/evaluation.js would find no `overallScore` and render an empty
+// scorecard, js/interviewer.js would find no `question` and report a broken reply.
+//
+// The guard is deliberately narrow: an object is only treated as an envelope when it
+// carries something only an envelope has (choices[0].message, or a bare message with
+// content). A genuine reply object — {type,question,reason} — is left alone, and
+// anything unrecognised is returned unchanged so no reply is ever emptied by a
+// heuristic that guessed wrong.
+function envelopeContent(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return '';
+
+  const choice = Array.isArray(obj.choices) && obj.choices[0] && typeof obj.choices[0] === 'object'
+    ? obj.choices[0] : null;
+  if (choice) {
+    if (choice.message && typeof choice.message === 'object') {
+      const c = choice.message.content;
+      if (typeof c === 'string' && c.trim()) return c;
+    }
+    if (typeof choice.text === 'string' && choice.text.trim()) return choice.text;
+  }
+
+  const msg = obj.message;
+  if (msg && typeof msg === 'object' && typeof msg.content === 'string' && msg.content.trim()) {
+    return msg.content;
+  }
+
+  return '';
+}
+
+// The model's text with any envelope peeled off it. Returns the input unchanged
+// whenever it is not envelope-shaped, which is the common case.
+function unwrapModelText(text) {
+  const raw = typeof text === 'string' ? text.trim() : '';
+  if (!raw || raw.charAt(0) !== '{') return text || '';
+  let obj = null;
+  try { obj = JSON.parse(raw); } catch { return text || ''; }
+  const inner = envelopeContent(obj);
+  return inner || text || '';
 }
 
 // ============================================================

@@ -36,8 +36,9 @@ and it runs.
 2. **Start interview.** The interviewer greets you, introduces the session and asks
    the first question — spoken aloud.
 3. Answer. `[Mic]` dictates, the textarea takes typing, `Enter` sends and
-   `Shift+Enter` adds a newline. `[+]` opens a code editor whose *Insert into answer*
-   puts a fenced block into your answer, so prose and code travel as one message.
+   `Shift+Enter` adds a newline. `[+]` opens a full-screen code editor whose *Insert
+   into answer* puts a fenced block into your answer, so prose and code travel as one
+   message.
 4. `[Cam]` shows a local self-view. It is never recorded and never sent anywhere.
 5. The interview ends when you press `[END]`, when the countdown reaches zero, or when
    the question cap is reached. The evaluation then runs once and appears as the last
@@ -61,12 +62,20 @@ straight back. Your answers, the notices and the final evaluation are never mask
 | OpenAI | Chat Completions |
 | Anthropic | Messages API; direct browser access is requested explicitly |
 | Google Gemini | OpenAI-compatible endpoint |
-| DeepSeek | Includes `deepseek-reasoner`, which cannot be sent `response_format` |
+| DeepSeek | `deepseek-reasoner` cannot be sent `response_format`, so it answers in prose; pick `deepseek-chat` for a scored evaluation |
 | Moonshot (Kimi) | OpenAI-compatible |
 | Mistral | OpenAI-compatible |
 
 Only `message.content` is ever read — any `reasoning_content` or chain-of-thought a
 model returns is discarded and never rendered, logged or spoken.
+
+The interviewer is asked for JSON (`{"type","question","reason"}`) and every provider
+that accepts `response_format` is made to honour it. Where a model cannot be —
+`deepseek-reasoner` is the one shipped here — a **plain-spoken sentence is accepted as
+a complete turn**: it is shown and read aloud exactly like a JSON reply, with no
+warning, because a question is a question. You lose only the private `reason` note.
+The evaluation is different: a scorecard needs an object, so on such a model the
+scoring fails and says so, naming a model that works.
 
 Every provider is called **directly from your browser** with your key. No proxy is
 added. If a provider blocks cross-origin browser requests, the app says so plainly
