@@ -26,7 +26,7 @@ load in your own browser.
 ### API keys
 
 AI Interviewer is "bring your own key". You paste an API key for a provider (OpenAI,
-Anthropic, Google, DeepSeek, Moonshot or Mistral). A key is:
+Anthropic, Google, DeepSeek, Moonshot, Grok, Qwen, Z.ai or Muse Spark). A key is:
 
 - **read** from the Settings field when a request is made;
 - **stored** only when you press **Save**, so you enter it once instead of on every
@@ -115,8 +115,11 @@ Each provider handles that data under its own privacy policy. The relevant ones 
 [Anthropic](https://www.anthropic.com/legal/privacy),
 [Google](https://policies.google.com/privacy),
 [DeepSeek](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html),
-[Moonshot AI](https://platform.moonshot.ai/docs/agreement/privacy) and
-[Mistral AI](https://mistral.ai/terms#privacy-policy).
+[Moonshot AI](https://platform.moonshot.ai/docs/agreement/privacy),
+[xAI](https://x.ai/legal/privacy-policy),
+[Alibaba Cloud](https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-privacy-policy),
+[Z.ai](https://z.ai/legal-agreement/privacy-policy) and
+[Meta](https://www.facebook.com/privacy/policy).
 
 ## Retention and deletion
 

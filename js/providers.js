@@ -5,13 +5,19 @@
 // style 'messages' = Anthropic Messages API (anthropic-version header)
 // json / temp      = whether the API accepts response_format + temperature;
 //                    callChat retries bare if a model rejects either.
+// strictRoles      = the API VALIDATES the messages array (non-empty, alternating,
+//                    starting on `user`, and/or ending on `user`). callChat repairs the
+//                    transcript for these providers only — see roleSafeMessages() in
+//                    js/api.js. Without it the opening turn is an empty conversation and
+//                    the first recorded turn is the interviewer's own question.
 // The wire format itself lives in js/api.js.
 //
-// TODO — unverified model IDs. The Anthropic, Gemini and Moonshot `models` lists
-// below have NOT been checked against each provider's live documentation and must
-// not be treated as correct. They are only suggestions in a <datalist>, so a stale
-// ID costs the user a retype rather than a dead end (Settings' model field is
-// free text) — but these entries still need verifying before release.
+// Model IDs were checked against each provider's live documentation on 2026-09-11.
+// They are only suggestions in a <datalist>, so a stale ID costs the user a retype
+// rather than a dead end (Settings' model field is free text) — but they are worth
+// re-checking before each release, because every provider retires models on its own
+// schedule. OpenAI's o3-mini and o4-mini were removed from this list for exactly that
+// reason: both shut down on 2026-10-23.
 
 'use strict';
 
@@ -20,20 +26,22 @@ const PROVIDERS = [
     id: 'openai', label: 'OpenAI',
     endpoint: 'https://api.openai.com/v1/chat/completions',
     style: 'chat', json: true, temp: true,
-    fallback: 'gpt-4o',
-    noTemp: (m) => /^o[134]/.test(m),
-    hint: 'Reasoning models fall back to gpt-4o automatically if your key rejects them.',
+    fallback: 'gpt-5.6-terra',
+    // The o-series and the gpt-5/gpt-6 reasoning families reject temperature.
+    noTemp: (m) => /^(o[134]|gpt-[56])/.test(m),
+    hint: 'Reasoning models fall back to gpt-5.6-terra automatically if your key rejects them.',
     ph: 'sk-...',
     models: [
-      { v: 'o3-mini', l: 'o3-mini (reasoning)' },
-      { v: 'o4-mini', l: 'o4-mini (reasoning)' },
-      { v: 'gpt-4o', l: 'gpt-4o (fast)' },
+      { v: 'gpt-6-astra', l: 'GPT-6 Astra (deepest reasoning)' },
+      { v: 'gpt-5.6-sol', l: 'GPT-5.6 Sol (flagship)' },
+      { v: 'gpt-5.6-terra', l: 'GPT-5.6 Terra (balanced)' },
+      { v: 'gpt-4o', l: 'GPT-4o (fast, no reasoning)' },
     ],
   },
   {
     id: 'anthropic', label: 'Claude',
     endpoint: 'https://api.anthropic.com/v1/messages',
-    style: 'messages', json: false, temp: false,
+    style: 'messages', json: false, temp: false, strictRoles: true,
     fallback: 'claude-sonnet-5',
     def: 'claude-sonnet-5',
     hint: 'Key from console.anthropic.com — JSON is requested inside the prompt.',
@@ -63,14 +71,14 @@ const PROVIDERS = [
     id: 'deepseek', label: 'DeepSeek',
     endpoint: 'https://api.deepseek.com/chat/completions',
     style: 'chat', json: true, temp: true,
-    fallback: 'deepseek-chat',
-    noTemp: (m) => m === 'deepseek-reasoner',
-    noJson: (m) => m === 'deepseek-reasoner',
-    hint: 'OpenAI-compatible reasoning API. Reasoner falls back to deepseek-chat.',
+    fallback: 'deepseek-flash',
+    // deepseek-chat / deepseek-reasoner are retired names. Both current models support
+    // response_format, so neither needs the `noJson` exemption the old reasoner did.
+    hint: 'Both models think by default; temperature is accepted but ignored in thinking mode.',
     ph: 'sk-...',
     models: [
-      { v: 'deepseek-reasoner', l: 'deepseek-reasoner (R1)' },
-      { v: 'deepseek-chat', l: 'deepseek-chat (V3)' },
+      { v: 'deepseek-flash', l: 'deepseek-flash (fast)' },
+      { v: 'deepseek-v4-pro', l: 'deepseek-v4-pro (deep reasoning)' },
     ],
   },
   {
@@ -87,15 +95,59 @@ const PROVIDERS = [
     ],
   },
   {
-    id: 'mistral', label: 'Mistral',
-    endpoint: 'https://api.mistral.ai/v1/chat/completions',
+    id: 'grok', label: 'Grok',
+    endpoint: 'https://api.x.ai/v1/chat/completions',
     style: 'chat', json: true, temp: true,
-    fallback: 'mistral-small-latest',
-    hint: 'Key from console.mistral.ai.',
+    fallback: 'grok-4.6',
+    hint: 'Key from console.x.ai. Grok places no order limit on the messages array.',
+    ph: 'xai-...',
+    models: [
+      { v: 'grok-4.6', l: 'Grok 4.6 (deepest reasoning)' },
+      { v: 'grok-4.5', l: 'Grok 4.5' },
+      { v: 'grok-4.3', l: 'Grok 4.3 (fast, 1M context)' },
+    ],
+  },
+  {
+    id: 'qwen', label: 'Qwen',
+    // Alibaba Model Studio's OpenAI-compatible endpoint. The region-specific domains
+    // Alibaba now recommends embed a workspace ID (`{WorkspaceId}.ap-southeast-1…`)
+    // that this app has no field for, so the international endpoint is used instead.
+    // It demands more of the messages array than the others — see strictRoles.
+    endpoint: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',
+    style: 'chat', json: true, temp: true, strictRoles: true,
+    fallback: 'qwen3.8-flash',
+    hint: 'Alibaba Model Studio (Singapore). The key must come from the same region as the endpoint.',
+    ph: 'sk-...',
+    models: [
+      { v: 'qwen3.8-max', l: 'Qwen3.8 Max (deep reasoning)' },
+      { v: 'qwen3.7-plus', l: 'Qwen3.7 Plus (balanced)' },
+      { v: 'qwen3.8-flash', l: 'Qwen3.8 Flash (fast)' },
+    ],
+  },
+  {
+    id: 'zai', label: 'Z.ai',
+    endpoint: 'https://api.z.ai/api/paas/v4/chat/completions',
+    style: 'chat', json: true, temp: true,
+    fallback: 'glm-5.3',
+    hint: 'Z.ai (Zhipu GLM). Key from z.ai — GLM-5.3 always reasons and cannot be told not to.',
     ph: '...',
     models: [
-      { v: 'mistral-large-latest', l: 'Mistral Large' },
-      { v: 'mistral-small-latest', l: 'Mistral Small (fast)' },
+      { v: 'glm-5.3', l: 'GLM-5.3 (flagship reasoning)' },
+      { v: 'glm-5.2', l: 'GLM-5.2' },
+      { v: 'glm-5.3-flash', l: 'GLM-5.3 Flash (fast)' },
+    ],
+  },
+  {
+    id: 'meta', label: 'Muse Spark',
+    endpoint: 'https://api.meta.ai/v1/chat/completions',
+    style: 'chat', json: true, temp: true,
+    fallback: 'muse-spark-1.1',
+    hint: 'Meta Model API. Key from dev.meta.ai — reasoning is always on. The Contributor model is cheaper but lets Meta train on your prompts.',
+    ph: '...',
+    models: [
+      { v: 'muse-spark-1.3', l: 'Muse Spark 1.3 (deepest reasoning)' },
+      { v: 'muse-spark-1.1', l: 'Muse Spark 1.1' },
+      { v: 'muse-spark-1.3-contributor', l: 'Muse Spark 1.3 Contributor (cheaper, prompts used for training)' },
     ],
   },
 ];
@@ -104,13 +156,19 @@ const PROVIDER_MAP = Object.fromEntries(PROVIDERS.map((p) => [p.id, p]));
 
 // ---------- structured output, and what to say when a model cannot do it ----------
 // The interviewer's reply format and the evaluation's scorecard are both requested as
-// JSON, and for most models js/api.js also enforces it with `response_format`. A few
-// reasoning models reject that parameter outright — deepseek-reasoner is the one this
-// app ships — so `noJson(model)` marks them and callChat leaves it off. Such a model
-// is then asked for JSON in WORDS ONLY, and a reasoning model asked in words may well
-// answer in prose.
+// JSON, and wherever the provider allows it js/api.js also enforces that with
+// `response_format`. A provider whose reasoning models reject that parameter declares
+// them with `noJson(model)`, and callChat then leaves it off. Such a model is asked for
+// JSON in WORDS ONLY, and a reasoning model asked in words may well answer in prose.
 //
-// What that means per feature, which is why this helper exists:
+// NO PROVIDER SHIPPED TODAY NEEDS THIS. Every model listed above accepts
+// `response_format` — including the two DeepSeek models, where the retired
+// `deepseek-reasoner` was the original reason this mechanism exists. It is kept because
+// it is a real provider capability and the alternative is rediscovering it at runtime;
+// a future model that rejects the parameter declares itself here and the rest of the
+// app keeps working.
+//
+// What it means per feature, which is why these helpers exist:
 //   · The chat turn survives prose — a sentence is a perfectly good question, and
 //     js/interviewer.js reads it as one. Nothing to report.
 //   · The evaluation does NOT: a scorecard needs an object, and prose cannot be

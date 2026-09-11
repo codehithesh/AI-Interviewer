@@ -637,8 +637,8 @@ function applyInterviewerReply(raw, prov, reasoningOnly) {
 
   // No notice for a reply that arrived as prose instead of JSON. It used to carry
   // one, and it fired on EVERY turn for any model that cannot be sent
-  // `response_format` — deepseek-reasoner above all, which is exempted in
-  // js/providers.js and so is only ever asked for JSON in words. A sentence is a
+  // `response_format` — a model exempted by `noJson` in js/providers.js, and so only
+  // ever asked for JSON in words. A sentence is a
   // complete interviewer turn; the format adds a private note, not validity. The
   // visible result was a permanent "the interviewer replied in the wrong format"
   // warning sitting over a transcript that was working perfectly, so the prose path

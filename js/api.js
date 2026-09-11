@@ -66,6 +66,62 @@ function withAnswerNudge(messages) {
   return out;
 }
 
+// ============================================================
+// "Your messages array is not valid" — the shape two providers reject
+// ============================================================
+// The interview transcript is built for a stateless chat API, and both of the ways it
+// begins are illegal for a provider that VALIDATES the array rather than just reading
+// it:
+//
+//  · THE OPENING TURN HAS NO CONVERSATION AT ALL. startInterview() wipes history to a
+//    lone system turn and immediately asks for the first question, so the non-system
+//    part of the array is EMPTY. Anthropic's Messages API requires at least one message
+//    and Qwen's compatible mode requires the array to END on a `user` turn, so the
+//    opening request fails both.
+//  · THE FIRST RECORDED TURN IS THE INTERVIEWER'S OWN QUESTION. pushHistory('assistant',
+//    …) in js/interview.js runs before any user turn exists, so a replayed history
+//    BEGINS with `assistant`. Anthropic requires the first message to be `user`.
+//
+// Both are repaired here, together, because they are one defect seen at two moments:
+// the transcript has no user turn where the provider needs one. A kickoff `user` turn
+// is placed ahead of a conversation that has no user turn to lead it, and same-role
+// neighbours are merged so alternation still holds after trimHistory() has sliced the
+// history down to its cap.
+//
+// Providers opt in with `strictRoles` (js/providers.js). The rest are sent the
+// transcript untouched: the kickoff is a turn the model did not write, and there is no
+// reason to put words in the candidate's mouth for a provider that does not need it.
+const KICKOFF_TURN = 'Begin the interview now: greet the candidate and ask your first question.';
+
+// `keepSystem` leaves the system turns inline at the head of the array, which is the
+// OpenAI-compatible shape. Anthropic takes the system prompt as its own top-level field
+// instead, so it passes false and the array carries conversation only.
+function roleSafeMessages(messages, keepSystem) {
+  const out = [];
+  if (keepSystem) {
+    for (const m of messages || []) {
+      if (m && m.role === 'system' && typeof m.content === 'string') {
+        out.push({ role: 'system', content: m.content });
+      }
+    }
+  }
+  const head = out.length;   // the non-system turns start here
+  for (const m of messages || []) {
+    if (!m || m.role === 'system') continue;
+    const role = m.role === 'assistant' ? 'assistant' : 'user';
+    const content = typeof m.content === 'string' ? m.content : '';
+    const prev = out[out.length - 1];
+    if (out.length > head && prev.role === role) prev.content += '\n\n' + content;
+    else out.push({ role, content });
+  }
+  // Nothing to lead with, or the transcript leads with the interviewer's own question:
+  // the provider needs a user turn first, so the interview is opened explicitly.
+  if (!out[head] || out[head].role === 'assistant') {
+    out.splice(head, 0, { role: 'user', content: KICKOFF_TURN });
+  }
+  return out;
+}
+
 // Call once; if the model came back with no text at all, call once more with the nudge.
 // `call(nudge)` returns { text, reasoningOnly }. Both-empty is reported rather than
 // thrown: it is a model failure the caller describes in words, not an exception.
@@ -98,8 +154,10 @@ async function callChat(prov, model, messages) {
   // ---- Anthropic Messages API (different wire format) ----
   if (cfg.style === 'messages') {
     const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n');
-    const conv = messages.filter((m) => m.role !== 'system')
-      .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+    // Anthropic rejects an empty array, a leading `assistant`, and any same-role run —
+    // see roleSafeMessages(). The system prompt travels in its own field below, so the
+    // array carries conversation only.
+    const conv = roleSafeMessages(messages, false);
     const call = async (m, nudge) => {
       // The nudge joins the system prompt here, for the reason given above.
       const sys = nudge ? nudgedSystemText(system) : system;
@@ -148,9 +206,12 @@ async function callChat(prov, model, messages) {
   const wantsJson = !!cfg.json && !(cfg.noJson ? cfg.noJson(model) : false);
   const wantsTemp = !!cfg.temp && !(cfg.noTemp ? cfg.noTemp(model) : false);
   const attempt = async (m, jsonFmt, temp, nudge) => {
+    const convo = nudge ? withAnswerNudge(messages) : messages;
     const body = {
       model: m,
-      messages: nudge ? withAnswerNudge(messages) : messages,
+      // Qwen's compatible mode validates the array (strictRoles); every other provider
+      // here takes the transcript as built. See roleSafeMessages().
+      messages: cfg.strictRoles ? roleSafeMessages(convo, true) : convo,
       ...(temp ? { temperature: 0.2 } : {}),
       ...(jsonFmt ? { response_format: { type: 'json_object' } } : {}),
     };

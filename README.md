@@ -15,9 +15,10 @@ and it runs.
 
 ## What you need
 
-- **An API key** for one of the six supported providers: OpenAI, Anthropic (Claude),
-  Google (Gemini), DeepSeek, Moonshot (Kimi) or Mistral. You pay that provider
-  directly for what you use; this project has no server and never sees your key.
+- **An API key** for one of the nine supported providers: OpenAI, Anthropic (Claude),
+  Google (Gemini), DeepSeek, Moonshot (Kimi), Grok, Qwen, Z.ai (GLM) or Muse Spark
+  (Meta). You pay that
+  provider directly for what you use; this project has no server and never sees your key.
 - **A browser, served over `http://localhost` or HTTPS.** The microphone and the
   camera only work in a secure context, so opening `index.html` by double-clicking
   it (`file://`) disables both. Any static server will do:
@@ -62,9 +63,12 @@ straight back. Your answers, the notices and the final evaluation are never mask
 | OpenAI | Chat Completions |
 | Anthropic | Messages API; direct browser access is requested explicitly |
 | Google Gemini | OpenAI-compatible endpoint |
-| DeepSeek | `deepseek-reasoner` cannot be sent `response_format`; it is asked for prose instead, so pick `deepseek-chat` for a scored evaluation |
+| DeepSeek | Chat Completions; both current models support `response_format` |
 | Moonshot (Kimi) | OpenAI-compatible |
-| Mistral | OpenAI-compatible |
+| Grok | OpenAI-compatible (xAI) |
+| Qwen | Alibaba Model Studio (Singapore), OpenAI-compatible |
+| Z.ai | Zhipu GLM, OpenAI-compatible |
+| Muse Spark | Meta Model API (`api.meta.ai`), OpenAI-compatible |
 
 Only `message.content` is ever read — any `reasoning_content` or chain-of-thought a
 model returns is discarded and never rendered, logged or spoken.
@@ -78,7 +82,8 @@ naming the model — the reasoning itself is still never shown or spoken.
 
 The interviewer asks a JSON-capable model for JSON (`{"type","question","reason"}`) and
 every provider that accepts `response_format` is made to honour it. A model that cannot
-be — `deepseek-reasoner` is the one shipped here — is asked for the spoken sentence
+be — declared per provider with `noJson`, though none of the eight shipped today needs
+it — is asked for the spoken sentence
 directly instead of for JSON in words, because a reasoning model's chain of thought and
 its answer share one output budget and a JSON object is what gets cut off. Either way a
 **plain-spoken sentence is accepted as a complete turn**: it is shown and read aloud
@@ -88,6 +93,13 @@ still contains rather than thrown away.
 
 The evaluation is different: a scorecard needs an object, so on such a model the
 scoring fails and says so, naming a model that works.
+
+Anthropic and Qwen validate the shape of the `messages` array rather than just reading
+it: Anthropic requires a non-empty array that alternates and begins on a `user` turn,
+and Qwen requires it to end on one. The interview transcript satisfies neither on its
+opening turn, which carries only a system prompt, and Anthropic's is also led by the
+interviewer's own question. Those providers declare `strictRoles` and the request is
+repaired for them — see `roleSafeMessages()` in `js/api.js`.
 
 Every provider is called **directly from your browser** with your key. No proxy is
 added. If a provider blocks cross-origin browser requests, the app says so plainly

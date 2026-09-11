@@ -396,7 +396,7 @@ function replyFrom(obj, depth) {
 // PLAIN PROSE IS A NORMAL, HEALTHY REPLY, not a fallback to be apologised for. Two
 // things produce it, and both are read here without complaint: a JSON-capable model
 // that is asked in words and answers in a sentence anyway, and a model that cannot be
-// sent `response_format` (deepseek-reasoner is exempted in js/providers.js), which is
+// sent `response_format` (a model exempted by `noJson` in js/providers.js), which is
 // now asked for prose outright — see PLAIN_REPLY_FORMAT_RULES. A reasoning model that
 // answers "Hi there, let's drop to something simpler…" has done exactly its job: it
 // replied with the sentence it wants spoken next. The JSON envelope only adds the
