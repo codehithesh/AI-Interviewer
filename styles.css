@@ -317,6 +317,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 #rate-select { width: 88px; }
 .check { display: inline-flex; align-items: center; gap: 6px; margin-top: 0; font-size: 12px; font-weight: 500; color: var(--text-dim); white-space: nowrap; cursor: pointer; }
 .check input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; cursor: pointer; }
+/* the Chat section's checkbox in Settings: kept to its own width so it reads as a
+   standalone setting rather than a control belonging to the field above it */
+.mask-check { align-self: flex-start; font-size: 12.5px; }
 
 /* the status line (§8.3): Thinking / Listening / Speaking
    A short strip that appears only while something is happening — see
@@ -380,7 +383,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 /* bubbles */
 .bubble { max-width: 100%; padding: 10px 13px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; word-wrap: break-word; }
 .bubble.user { background: var(--user-bubble); color: var(--user-bubble-text); border-top-right-radius: 4px; max-width: 88%; }
-.bubble.ai { background: var(--ai-bubble); border: 1px solid var(--border); color: var(--text); align-self: stretch; border-top-left-radius: 4px; }
+.bubble.ai { background: var(--ai-bubble); border: 1px solid var(--border); color: var(--text); align-self: stretch; border-top-left-radius: 4px; position: relative; }
 .bubble-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; opacity: 0.8; }
 .bubble.user .bubble-header { opacity: 0.9; }
 /* answers arrive with real line breaks; keep them */
@@ -399,6 +402,25 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 
 /* [Try again] on a failed turn, inside the error bubble it belongs to */
 .bubble-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ---------- masked interviewer replies ----------
+   A display preference from Settings: with .mask-ai on the transcript, every
+   interviewer reply is covered by a SOLID panel reading "Hidden". The cover is a
+   real element (appendBubble, js/interview.js), not a blur or a fade — the reply
+   underneath is left exactly as it was, so the export, speech and unmasking all
+   still see the full text. It covers the whole bubble, header included, and takes
+   the bubble's own radius so the shape underneath is what shows through at the
+   corners. Candidate answers, notices and the evaluation carry no cover at all. */
+.bubble-mask { display: none; }
+.transcript.mask-ai .turn[data-kind="question"] .bubble-mask {
+  display: flex; align-items: center; justify-content: center;
+  position: absolute; inset: 0; z-index: 1;
+  background: var(--ai-bubble); border-radius: inherit;
+}
+.bubble-mask-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
 
 /* ---------- readiness card (the Ready state, in place of a transcript) ---------- */
 .readiness-turn { align-items: stretch; }
@@ -604,15 +626,34 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   padding: 16px 20px 20px;
   display: flex; flex-direction: column; gap: 10px;
 }
-#settings-modal .modal-body { padding: 16px 24px 22px; }
+#settings-modal .modal-body { padding: 16px 24px 22px; gap: 0; }
+
+/* ---------- settings sections ----------
+   The modal is four unrelated groups of settings — appearance, chat, the
+   interview brief, the provider — and with nothing between them they ran together
+   as one long column. Each group is a .settings-section now: the rule is drawn by
+   the section itself, so the boundary between groups is a property of the layout
+   rather than something every heading has to remember to carry. The modal-body
+   gap is dropped to 0 because the sections own their spacing. */
+.settings-section {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+}
+/* No rule above the first group and none below the last: the header above and the
+   modal's own padding below already draw those edges, and a second line there
+   would just box the content in. */
+.settings-section:first-child { padding-top: 0; border-top: 0; }
+.settings-section:last-child { padding-bottom: 0; }
+
 .modal-label {
   font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--text-dim); margin-top: 10px;
+  color: var(--text-dim); margin-top: 0;
 }
 /* appearance picker: label on the left, System / Light / Dark tabs on the right */
 .appearance-row {
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px 14px; margin-top: 10px;
+  flex-wrap: wrap; gap: 10px 14px; margin-top: 0;
 }
 .appearance-row .appearance-label { margin-top: 0; }
 .appearance-row .seg {

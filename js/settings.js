@@ -123,6 +123,7 @@ function draftFromPrefs() {
     models: Object.assign({}, prefs.models),
     theme: prefs.theme,
     interview: Object.assign({}, prefs.interview || defaultInterview()),
+    maskAi: !!prefs.maskAi,
   };
 }
 
@@ -137,6 +138,7 @@ function applyDraftToInputs() {
   selectProvider(draft.provider);
   previewThemePref(draft.theme);
   paintInterviewInputs(draft.interview);
+  els.maskAiReplies.checked = !!draft.maskAi;
   updateForgetBtn();
 }
 
@@ -153,6 +155,9 @@ async function saveSettings() {
     }
     draft.provider = state.provider;
     draft.theme = uiThemePref;
+    // A checkbox reflects its own state, so read it back like the Interview fields
+    // rather than trusting the draft to have tracked the click.
+    draft.maskAi = els.maskAiReplies.checked;
     // The Interview fields are edited in this modal, so read them back out of it
     // rather than trusting the draft to have tracked every keystroke.
     draft.interview = readInterviewInputs();
@@ -164,6 +169,7 @@ async function saveSettings() {
   draftFromPrefs();
   syncThemePref();
   applySpeech();
+  if (typeof applyReplyMask === 'function') applyReplyMask();
   updateForgetBtn();
   // The Ready card restates the saved configuration, so if the session is not
   // running it must be repainted with what was just saved.
@@ -186,6 +192,9 @@ function closeSettings() {
   if (!prefs) return;
   draftFromPrefs();
   applyDraftToInputs();
+  // The mask is previewed as the checkbox is ticked, so closing without saving has
+  // to put the chat back to what is actually stored — same as the theme preview.
+  if (typeof applyReplyMask === 'function') applyReplyMask();
   setApiError('');
 }
 
@@ -261,6 +270,14 @@ function wireSettings() {
   els.themeLight.addEventListener('click', () => previewThemePref('light'));
   els.themeDark.addEventListener('click', () => previewThemePref('dark'));
 
+  // Masking is a display choice like the theme: ticking it previews at once, but
+  // only Save keeps it. closeSettings() puts the chat back when the modal is
+  // dismissed without saving.
+  els.maskAiReplies.addEventListener('change', () => {
+    if (draft) draft.maskAi = els.maskAiReplies.checked;
+    if (typeof applyReplyMask === 'function') applyReplyMask(els.maskAiReplies.checked);
+  });
+
   els.btnSettings.addEventListener('click', () => {
     if (!prefs) prefs = blankPrefs();
     draftFromPrefs();
@@ -283,6 +300,9 @@ async function initSettings() {
   renderProviderCards();      // the model fields use the saved per-provider picks
   draftFromPrefs();
   applyDraftToInputs();       // the modal opens on exactly what is stored
+  // Paint the saved masking choice onto the chat. Nothing is in the transcript
+  // yet at boot, but the class is what every bubble added later keys off.
+  if (typeof applyReplyMask === 'function') applyReplyMask();
   // The saved voice is in state before the voice list is built, and Chrome fills
   // that list asynchronously — so build it again here as well as at init.
   populateVoices();

@@ -117,6 +117,35 @@ function bubbleBodyFor(turn) {
   return body;
 }
 
+// ============================================================
+// Reply masking
+// ============================================================
+// A display choice saved with the other preferences (js/store.js): when it is on,
+// every interviewer reply is covered by a solid panel reading "Hidden". The text
+// is NOT removed or hidden from the DOM — it stays in the bubble, in the model
+// history, in speech and in the export — so the mask is a cover rather than a
+// deletion, and turning the preference off brings every reply straight back.
+// Candidate answers and notices are never masked; the evaluation card is not a
+// turn at all and is untouched.
+//
+// The cover itself is an element appended to each question bubble (appendBubble).
+// This only toggles the class on the transcript that makes those covers show, so
+// switching the preference costs no re-render and every bubble already on screen —
+// and every one added later — follows along.
+
+// What is actually stored. `prefs` lives in js/settings.js and is loaded at boot.
+function aiRepliesMasked() {
+  return !!(prefs && prefs.maskAi);
+}
+
+// The Settings checkbox previews through the `on` argument; called with nothing,
+// it follows the stored preference — which is how boot and a discarded draft
+// (closeSettings) both repaint the chat from what is really saved.
+function applyReplyMask(on) {
+  const masked = typeof on === 'boolean' ? on : aiRepliesMasked();
+  els.transcript.classList.toggle('mask-ai', masked);
+}
+
 // One AI error bubble, wherever it came from: a failed question request here, a
 // failed evaluation in js/evaluation.js. Shared for the same reason as the body
 // above — one place decides what an error turn looks like.
@@ -143,6 +172,22 @@ function appendBubble(turn) {
 
   const body = bubbleBodyFor(turn);
   bubble.appendChild(body);
+
+  // The cover for a masked interviewer reply. It is always in the bubble and the
+  // transcript's .mask-ai class is what shows it, so the preference can change
+  // without rebuilding the transcript. aria-hidden because this is a visual cover,
+  // not the content: the reply stays in the accessibility tree and is read aloud
+  // exactly as before, which is the point — masked, not made invisible.
+  if (turn.role === 'ai' && turn.kind === 'question') {
+    const mask = document.createElement('div');
+    mask.className = 'bubble-mask';
+    mask.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.className = 'bubble-mask-label';
+    label.textContent = 'Hidden';
+    mask.appendChild(label);
+    bubble.appendChild(mask);
+  }
 
   if (turn.retry) bubble.appendChild(retryRow(turn.retryAction));
 

@@ -23,70 +23,101 @@ const SETTINGS_VIEW_HTML = `
         <button id="btn-close-settings" class="btn icon-btn" title="Close without saving" aria-label="Close">✕</button>
       </div>
     </div>
+    <!-- Each group of settings is a .settings-section, and the rule between two
+         of them comes from the sections themselves (styles.css) rather than from
+         headings scattered down one flat column — the whole modal used to read as
+         a single undivided list. -->
     <div class="modal-body">
-      <div class="appearance-row">
-        <h4 class="modal-label appearance-label">Appearance</h4>
-        <div class="seg">
-          <button id="theme-system" class="seg-btn active"><span class="ic ic-monitor" aria-hidden="true"></span>System</button>
-          <button id="theme-light" class="seg-btn"><span class="ic ic-sun" aria-hidden="true"></span>Light</button>
-          <button id="theme-dark" class="seg-btn"><span class="ic ic-moon" aria-hidden="true"></span>Dark</button>
+
+      <!-- ===================== APPEARANCE ===================== -->
+      <div class="settings-section">
+        <div class="appearance-row">
+          <h4 class="modal-label appearance-label">Appearance</h4>
+          <div class="seg">
+            <button id="theme-system" class="seg-btn active"><span class="ic ic-monitor" aria-hidden="true"></span>System</button>
+            <button id="theme-light" class="seg-btn"><span class="ic ic-sun" aria-hidden="true"></span>Light</button>
+            <button id="theme-dark" class="seg-btn"><span class="ic ic-moon" aria-hidden="true"></span>Dark</button>
+          </div>
         </div>
+      </div>
+
+      <!-- ===================== CHAT =====================
+           A display choice, not part of the interview brief: when this is on,
+           every interviewer message in the chat is covered by a solid panel
+           reading "Hidden". The reply text is never removed — it is still in the
+           DOM and in the export — so turning the mask off brings it straight
+           back. Candidate answers, notices and the evaluation are never masked. -->
+      <div class="settings-section">
+        <h4 class="modal-label">Chat</h4>
+        <label class="check mask-check" for="mask-ai-replies">
+          <input type="checkbox" id="mask-ai-replies">
+          <span>Mask AI replies</span>
+        </label>
+        <p class="hint">Covers each interviewer message in the chat with a solid <b>Hidden</b> panel. Your answers, the notices and the final evaluation stay visible, and nothing is deleted — the reply is still there to export and comes back the moment you unmask it.</p>
       </div>
 
       <!-- ===================== INTERVIEW =====================
            These fields shape the session. They are a snapshot taken when
            [Start interview] is pressed, so editing them mid-interview applies to
            the next interview rather than the one in progress. -->
-      <h4 class="modal-label">Interview</h4>
-      <p class="hint">These shape the interviewer's brief. Leave anything blank and it simply is not mentioned — an unconfigured interview still works. Changes apply to the next interview you start.</p>
+      <div class="settings-section">
+        <h4 class="modal-label">Interview</h4>
+        <p class="hint">These shape the interviewer's brief. Leave anything blank and it simply is not mentioned — an unconfigured interview still works. Changes apply to the next interview you start.</p>
 
-      <div class="field-grid">
-        <div class="field">
-          <label for="iv-role">Role</label>
-          <input type="text" id="iv-role" placeholder="e.g. Senior backend engineer" autocomplete="off">
+        <div class="field-grid">
+          <div class="field">
+            <label for="iv-role">Role</label>
+            <input type="text" id="iv-role" placeholder="e.g. Senior backend engineer" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="iv-type">Interview type</label>
+            <select id="iv-type">
+              <option value="general">General</option>
+              <option value="technical">Technical</option>
+              <option value="behavioral">Behavioral</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="iv-difficulty">Difficulty</label>
+            <select id="iv-difficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="iv-duration">Duration (minutes)</label>
+            <input type="number" id="iv-duration" min="1" step="1" placeholder="60" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="iv-questions">Questions</label>
+            <input type="number" id="iv-questions" min="1" step="1" placeholder="No limit" autocomplete="off">
+          </div>
         </div>
+
         <div class="field">
-          <label for="iv-type">Interview type</label>
-          <select id="iv-type">
-            <option value="general">General</option>
-            <option value="technical">Technical</option>
-            <option value="behavioral">Behavioral</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="iv-difficulty">Difficulty</label>
-          <select id="iv-difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="iv-duration">Duration (minutes)</label>
-          <input type="number" id="iv-duration" min="1" step="1" placeholder="60" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="iv-questions">Questions</label>
-          <input type="number" id="iv-questions" min="1" step="1" placeholder="No limit" autocomplete="off">
+          <label for="iv-prompt">Prompt</label>
+          <textarea id="iv-prompt" rows="3" placeholder="Anything the interviewer should focus on, ask about, or avoid."></textarea>
         </div>
       </div>
 
-      <div class="field">
-        <label for="iv-prompt">Prompt</label>
-        <textarea id="iv-prompt" rows="3" placeholder="Anything the interviewer should focus on, ask about, or avoid."></textarea>
+      <!-- ===================== AI PROVIDER ===================== -->
+      <div class="settings-section">
+        <h4 class="modal-label">AI provider</h4>
+        <p class="hint">Pick a provider and type its API key, then choose its model. Nothing is stored until you press <b>Save</b> — saving keeps the keys, the provider, the models, the interview settings and your appearance choice in this browser's own storage. (The voice, speed and auto-speak in the speech bar save themselves as you change them.) Keys are sent only to their provider when the interviewer asks a question. <b>Forget saved keys</b> erases them from the browser completely.</p>
+
+        <div id="provider-list"></div>
+
+        <div class="forget-row">
+          <button id="btn-forget-keys" class="btn compact" disabled><span class="ic ic-trash" aria-hidden="true"></span>Forget saved keys</button>
+          <span class="hint">Erases any saved keys from this browser.</span>
+        </div>
+
+        <!-- Key trouble is reported inside the section that owns the keys, so a
+             message about an API key sits with the fields it is about. -->
+        <div id="api-error"></div>
       </div>
 
-      <h4 class="modal-label">AI provider</h4>
-      <p class="hint">Pick a provider and type its API key, then choose its model. Nothing is stored until you press <b>Save</b> — saving keeps the keys, the provider, the models, the interview settings and your appearance choice in this browser's own storage. (The voice, speed and auto-speak in the speech bar save themselves as you change them.) Keys are sent only to their provider when the interviewer asks a question. <b>Forget saved keys</b> erases them from the browser completely.</p>
-
-      <div id="provider-list"></div>
-
-      <div class="forget-row">
-        <button id="btn-forget-keys" class="btn compact" disabled><span class="ic ic-trash" aria-hidden="true"></span>Forget saved keys</button>
-        <span class="hint">Erases any saved keys from this browser.</span>
-      </div>
-
-      <div id="api-error"></div>
     </div>
   </div>
 </div>

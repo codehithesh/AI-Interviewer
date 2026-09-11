@@ -45,6 +45,7 @@ function cacheEls() {
     btnSettings: $('btn-settings'), btnSaveSettings: $('btn-save-settings'), btnCloseSettings: $('btn-close-settings'),
     settingsModal: $('settings-modal'),
     themeSystem: $('theme-system'), themeLight: $('theme-light'), themeDark: $('theme-dark'),
+    maskAiReplies: $('mask-ai-replies'),
     providerList: $('provider-list'),
     apiError: $('api-error'),
     btnForgetKeys: $('btn-forget-keys'),

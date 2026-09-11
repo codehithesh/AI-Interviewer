@@ -3,7 +3,8 @@
 // ============================================================
 // The settings modal edits a draft (see js/settings.js); nothing from that modal
 // reaches storage until you press Save, which remembers the API keys, the chosen
-// provider, the chosen model per provider and the light/dark appearance choice.
+// provider, the chosen model per provider, the light/dark appearance choice and
+// whether the interviewer's replies are masked in the chat.
 // The voice and speed in the speech bar are the exception — they sit outside the
 // modal, so they are written the moment they change. “Forget saved keys” erases
 // the keys alone and leaves those preferences standing.
@@ -27,6 +28,7 @@ const STORE = {
   theme: 'rlTheme',
   speech: 'rlSpeech',
   interview: 'rlInterview',
+  maskAi: 'rlMaskAi',
 };
 
 const THEMES = ['system', 'light', 'dark'];
@@ -54,6 +56,7 @@ function blankPrefs() {
     keys: {}, provider: state.provider, models: {}, theme: 'system',
     speech: { voice: '', rate: 1, autoSpeak: true },
     interview: defaultInterview(),
+    maskAi: false,
   };
 }
 
@@ -77,6 +80,10 @@ function shapePrefs(raw) {
     }
   }
   if (THEMES.indexOf(raw.theme) >= 0) p.theme = raw.theme;
+  // A display choice rather than part of the interview brief: masking the
+  // interviewer's replies on screen. Anything that is not a real boolean (a
+  // hand-edited storage entry, an older build) leaves it off.
+  if (typeof raw.maskAi === 'boolean') p.maskAi = raw.maskAi;
   if (raw.interview && typeof raw.interview === 'object') {
     const i = raw.interview;
     if (typeof i.role === 'string') p.interview.role = i.role;
@@ -110,6 +117,7 @@ async function loadPrefs() {
       theme: localStorage.getItem(STORE.theme) || undefined,
       speech: readJson(STORE.speech),
       interview: readJson(STORE.interview),
+      maskAi: readJson(STORE.maskAi),
     };
   } catch { raw = {}; }
   return shapePrefs({
@@ -119,6 +127,7 @@ async function loadPrefs() {
     theme: raw.theme,
     speech: raw.speech,
     interview: raw.interview,
+    maskAi: raw.maskAi,
   });
 }
 
@@ -128,6 +137,7 @@ async function writePrefs(p) {
   try {
     localStorage.setItem(STORE.provider, p.provider);
     localStorage.setItem(STORE.theme, p.theme);
+    localStorage.setItem(STORE.maskAi, JSON.stringify(!!p.maskAi));
     localStorage.setItem(STORE.speech, JSON.stringify(p.speech));
     localStorage.setItem(STORE.interview, JSON.stringify(p.interview));
     if (models) localStorage.setItem(STORE.models, JSON.stringify(models));

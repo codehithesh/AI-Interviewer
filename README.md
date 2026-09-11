@@ -49,6 +49,11 @@ and it runs.
 Settings always edit a draft: nothing is stored until you press **Save**, and closing
 without saving throws the draft away.
 
+Under **Chat**, *Mask AI replies* covers each interviewer message in the transcript
+with a solid **Hidden** panel. The reply is never removed — it stays in the DOM, in
+the export and for the model's own history — so unticking the box brings every message
+straight back. Your answers, the notices and the final evaluation are never masked.
+
 ## Providers
 
 | Provider | Notes |
