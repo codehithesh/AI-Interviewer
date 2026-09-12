@@ -156,7 +156,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ic-monitor  { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjIwIiBoZWlnaHQ9IjE0IiByeD0iMiIgcnk9IjIiLz48bGluZSB4MT0iOCIgeTE9IjIxIiB4Mj0iMTYiIHkyPSIyMSIvPjxsaW5lIHgxPSIxMiIgeTE9IjE3IiB4Mj0iMTIiIHkyPSIyMSIvPjwvc3ZnPg=='); }
 .ic-trash    { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMyA2IDUgNiAyMSA2Ii8+PHBhdGggZD0iTTE5IDZ2MTRhMiAyIDAgMCAxLTIgMkg3YTIgMiAwIDAgMS0yLTJWNm0zIDBWNGEyIDIgMCAwIDEgMi0yaDRhMiAyIDAgMCAxIDIgMnYyIi8+PGxpbmUgeDE9IjEwIiB5MT0iMTEiIHgyPSIxMCIgeTI9IjE3Ii8+PGxpbmUgeDE9IjE0IiB5MT0iMTEiIHgyPSIxNCIgeTI9IjE3Ii8+PC9zdmc+'); }
 .ic-cam      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEyIiByeD0iMiIvPjxwYXRoIGQ9Ik0xNSAxMWw3LTR2MTBsLTctNHoiLz48L3N2Zz4='); }
-.ic-plus     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGxpbmUgeDE9IjEyIiB5MT0iNSIgeDI9IjEyIiB5Mj0iMTkiLz48bGluZSB4MT0iNSIgeTE9IjEyIiB4Mj0iMTkiIHkyPSIxMiIvPjwvc3ZnPg=='); }
+.ic-code     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0ibTE4IDE2IDQtNC00LTQiLz48cGF0aCBkPSJtNiA4LTQgNCA0IDQiLz48cGF0aCBkPSJtMTQuNSA0LTUgMTYiLz48L3N2Zz4='); }
 .ic-mic      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHJlY3QgeD0iOSIgeT0iMiIgd2lkdGg9IjYiIGhlaWdodD0iMTEiIHJ4PSIzIiBmaWxsPSIjMDAwIiBzdHJva2U9Im5vbmUiLz4KICA8cGF0aCBkPSJNNSAxMWE3IDcgMCAwIDAgMTQgMCIvPgogIDxsaW5lIHgxPSIxMiIgeTE9IjE4IiB4Mj0iMTIiIHkyPSIyMiIvPgo8L3N2Zz4='); }
 .ic-send     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTQgMTJsMTYtOC02IDE2LTMuMi02LjR6Ii8+CiAgPHBhdGggZD0iTTEwLjggMTMuNkwyMCA0Ii8+Cjwvc3ZnPg=='); }
 .ic-download { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTEyIDN2MTIiLz4KICA8cGF0aCBkPSJNNyAxMWw1IDUgNS01Ii8+CiAgPHBhdGggZD0iTTQgMjBoMTYiLz4KPC9zdmc+'); }
@@ -579,6 +579,42 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .bubble-body.md .md-math sub { vertical-align: sub; }
 /* The radical with a root degree keeps the degree just outside the overline. */
 .bubble-body.md .md-sqrt > sup { font-size: 0.6em; margin-right: -0.15em; }
+
+/* Accents. The mark is a positioned glyph above the argument rather than a font
+   feature, so \vec and \hat work without embedding a maths font. */
+.bubble-body.md .md-vec, .bubble-body.md .md-hat, .bubble-body.md .md-tilde,
+.bubble-body.md .md-dot, .bubble-body.md .md-ddot { position: relative; }
+.bubble-body.md .md-vec::after { content: '\2192'; }
+.bubble-body.md .md-hat::after { content: '\02C6'; }
+.bubble-body.md .md-tilde::after { content: '\02DC'; }
+.bubble-body.md .md-dot::after { content: '\02D9'; }
+.bubble-body.md .md-ddot::after { content: '\02D9\02D9'; }
+.bubble-body.md .md-vec::after, .bubble-body.md .md-hat::after,
+.bubble-body.md .md-tilde::after, .bubble-body.md .md-dot::after,
+.bubble-body.md .md-ddot::after {
+  position: absolute; left: 0; right: 0; top: -0.62em;
+  font-size: 0.68em; line-height: 1; text-align: center;
+}
+.bubble-body.md .md-over { text-decoration: overline; }
+.bubble-body.md .md-under { text-decoration: underline; }
+
+/* Environments. The grid is a display:table built from spans, and the delimiters are
+   the only thing that separates \pmatrix from \bmatrix — exactly how TeX treats them. */
+.bubble-body.md .md-matrix { display: inline-table; vertical-align: middle; margin: 0 0.15em; }
+.bubble-body.md .md-mrow { display: table-row; }
+.bubble-body.md .md-mcell { display: table-cell; padding: 1px 0.45em; text-align: center; }
+.bubble-body.md .md-matrix-align .md-mcell:first-child { text-align: right; }
+.bubble-body.md .md-matrix-align .md-mcell + .md-mcell { text-align: left; }
+.bubble-body.md .md-delim { font-size: 1.7em; line-height: 1; vertical-align: middle; padding: 0 0.04em; }
+
+/* \binom{n}{k}: a stacked pair inside parentheses, reusing the fraction's column. */
+.bubble-body.md .md-binom { display: inline-flex; align-items: center; vertical-align: middle; }
+.bubble-body.md .md-binom::before { content: '('; }
+.bubble-body.md .md-binom::after { content: ')'; }
+.bubble-body.md .md-binom::before, .bubble-body.md .md-binom::after { font-size: 1.5em; line-height: 1; }
+.bubble-body.md .md-bb { font-weight: 600; }
+.bubble-body.md .md-sans { font-family: sans-serif; }
+.bubble-body.md .md-mono { font-family: monospace; }
 
 /* ---------- task lists ----------
    A '- [x]' item gets a box drawn from a border plus a rotated tick, so no icon

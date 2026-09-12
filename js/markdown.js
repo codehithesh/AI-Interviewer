@@ -213,11 +213,72 @@ const MD_MATH_SYMBOLS = {
   angle: '&ang;', perp: '&perp;', parallel: '&parallel;', therefore: '&there4;',
   degree: '&deg;', circ: '&compfn;', star: '&star;', ast: '&lowast;',
   prime: '&prime;', ell: '&ell;', hbar: '&hbar;', Re: '&real;', Im: '&image;',
+  // relations and delimiters a proof or a complexity argument reaches for
+  ll: '&lt;&lt;', gg: '&gt;&gt;', cong: '&cong;', simeq: '&cong;', ni: '&ni;',
+  emptyset: '&empty;', varnothing: '&empty;', setminus: '&#8726;', backslash: '&#8726;',
+  oplus: '&oplus;', otimes: '&otimes;', odot: '&odot;', bullet: '&bull;',
+  because: '&because;', implies: '&rArr;', iff: '&hArr;', mid: '&#8739;',
+  langle: '&lang;', rangle: '&rang;', lceil: '&lceil;', rceil: '&rceil;',
+  lfloor: '&lfloor;', rfloor: '&rfloor;', vert: '&#8739;', Vert: '&#8214;',
 };
 
 // Commands that print nothing of their own: 'left' and 'right' are only size hints,
 // so they are dropped and the delimiter they wrapped is left standing.
 const MD_MATH_NOOP = new Set(['left', 'right', 'displaystyle', 'textstyle', 'limits', 'nolimits']);
+
+// Operators print upright, as a name rather than as a product of variables, and each
+// is a single atom so a limit can attach to it: \lim_{n \to \infty}. Without this
+// '\log' and '\lim' fell through to the unknown-command rule and printed their own
+// backslash.
+const MD_MATH_OPS = new Set([
+  'log', 'ln', 'lg', 'exp', 'lim', 'limsup', 'liminf', 'sin', 'cos', 'tan', 'cot',
+  'sec', 'csc', 'sinh', 'cosh', 'tanh', 'coth', 'arcsin', 'arccos', 'arctan',
+  'min', 'max', 'gcd', 'lcm', 'mod', 'bmod', 'sup', 'inf', 'arg', 'det', 'dim',
+  'deg', 'ker', 'hom', 'Pr', 'tr', 'rank', 'span', 'diag',
+]);
+
+// An accent wraps its argument in a span; the CSS draws the mark from a glyph or a
+// text decoration, so nothing has to be embedded. A bare '\bar x' takes one token.
+const MD_MATH_ACCENTS = {
+  vec: 'md-vec', overrightarrow: 'md-vec', overleftarrow: 'md-vec',
+  bar: 'md-over', overline: 'md-over', underline: 'md-under',
+  hat: 'md-hat', widehat: 'md-hat', tilde: 'md-tilde', widetilde: 'md-tilde',
+  dot: 'md-dot', ddot: 'md-ddot',
+};
+
+// Blackboard bold has real characters for the sets a reply actually names, so
+// \mathbb{R} is an ℝ and not a bold R.
+const MD_MATH_BB = {
+  R: '&#8477;', N: '&#8469;', Z: '&#8484;', Q: '&#8474;', C: '&#8450;',
+  P: '&#8473;', H: '&#8461;', E: '&#8496;', F: '&#8497;', D: '&#8517;',
+};
+
+// \begin{env} … \end{env}. Every variant is the same grid with different delimiters,
+// which is exactly how TeX treats them, so the only per-environment data is the pair
+// of delimiters and whether '&' columns align left/right (aligned) or centre (matrix).
+const MD_MATH_ENVS = {
+  matrix: { open: '', close: '' },
+  smallmatrix: { open: '', close: '' },
+  array: { open: '', close: '' },
+  gather: { open: '', close: '' },
+  gathered: { open: '', close: '' },
+  pmatrix: { open: '(', close: ')' },
+  bmatrix: { open: '[', close: ']' },
+  Bmatrix: { open: '{', close: '}' },
+  vmatrix: { open: '|', close: '|' },
+  Vmatrix: { open: '&#8214;', close: '&#8214;' },
+  cases: { open: '{', close: '' },
+  aligned: { open: '', close: '', align: true },
+  align: { open: '', close: '', align: true },
+  alignedat: { open: '', close: '', align: true },
+  split: { open: '', close: '', align: true },
+  eqnarray: { open: '', close: '', align: true },
+};
+// Wrappers that only group an equation; the body is the formula unchanged.
+const MD_MATH_TRANSPARENT = new Set([
+  'equation', 'equation*', 'displaymath', 'math', 'multline', 'multline*',
+]);
+
 
 // How a display equation is opened and closed. '$$' is what a model writes; '\[ … \]'
 // is the other spelling, and it shares the converter.
@@ -227,6 +288,10 @@ const MD_MATH_FENCES = [
 ];
 
 function mdMunch(src, i) {
+  // A script at the very end of a formula — '$x^$' — asks for a token that is not
+  // there. Handing back an empty one keeps the caller on the literal-character path
+  // instead of recursing on undefined.
+  if (i >= src.length) return { tex: '', end: src.length };
   if (src[i] === '{') {
     let depth = 0;
     for (let j = i; j < src.length; j += 1) {
@@ -247,43 +312,92 @@ function mdMunch(src, i) {
 }
 
 function mdMathGroup(inner, tag) {
-  const h = mdMath(inner);
+  const h = inner == null ? '' : mdMath(inner);
   if (!h) return '';
   return '<' + tag + '>' + h + '</' + tag + '>';
+}
+
+// Rows are split on '\\' and cells on '&', both scanned by hand so a '\&' stays in
+// the cell it was written in. An empty row — a trailing break, a stray '\hline' —
+// is dropped rather than drawn as a blank line.
+function mdSplitRows(body) {
+  const parts = [];
+  let cur = '';
+  for (let k = 0; k < body.length; k += 1) {
+    if (body[k] === '\\' && body[k + 1] === '\\') { parts.push(cur); cur = ''; k += 1; }
+    else cur += body[k];
+  }
+  parts.push(cur);
+  return parts;
+}
+
+function mdSplitCells(row) {
+  const parts = [];
+  let cur = '';
+  for (let k = 0; k < row.length; k += 1) {
+    if (row[k] === '\\' && row[k + 1] === '&') { cur += '&'; k += 1; }
+    else if (row[k] === '&') { parts.push(cur); cur = ''; }
+    else cur += row[k];
+  }
+  parts.push(cur);
+  return parts.map((c) => c.trim());
+}
+
+function mdMathEnvironment(env, body) {
+  const spec = MD_MATH_ENVS[env];
+  if (!spec) return null;
+  const rows = mdSplitRows(body.replace(/\\hline/g, ''))
+    .map(mdSplitCells)
+    .filter((cells) => cells.some((c) => c.length));
+  if (!rows.length) return null;
+  let html = '<span class="md-matrix' + (spec.align ? ' md-matrix-align' : '') + '">';
+  for (const cells of rows) {
+    html += '<span class="md-mrow">'
+      + cells.map((c) => '<span class="md-mcell">' + mdMath(c) + '</span>').join('')
+      + '</span>';
+  }
+  html += '</span>';
+  if (spec.open) html = '<span class="md-delim">' + spec.open + '</span>' + html;
+  if (spec.close) html += '<span class="md-delim">' + spec.close + '</span>';
+  return html;
+}
+
+// The font-changing commands. Only blackboard bold and bold have a rendering worth
+// promising; the script and fraktur faces have no font here, so their letters stand
+// as written rather than being faked.
+function mdMathStyled(name, tex) {
+  const inner = mdMath(tex);
+  if (name === 'mathbb') return MD_MATH_BB[tex.trim()] || '<span class="md-bb">' + inner + '</span>';
+  if (name === 'mathbf' || name === 'boldsymbol' || name === 'bm') return '<strong>' + inner + '</strong>';
+  if (name === 'mathsf') return '<span class="md-sans">' + inner + '</span>';
+  if (name === 'mathtt') return '<span class="md-mono">' + inner + '</span>';
+  return inner;
 }
 
 function mdMath(src) {
   let out = '';
   let plain = '';
+  // Where a '^' or '_' attaches. It is set to the end of every base atom, and moves
+  // forward as each script is added, so a_i^2 becomes a<sub>i</sub><sup>2</sup>
+  // instead of the exponent nesting inside the subscript — which is what
+  // \sum_{i=1}^{n} used to render as.
+  let scriptAt = -1;
   let i = 0;
   const flush = () => {
-    if (plain) { out += mdEscape(plain); plain = ''; }
+    if (plain) { out += mdEscape(plain); plain = ''; scriptAt = out.length; }
   };
 
   while (i < src.length) {
     const ch = src[i];
 
-    // A superscript or subscript binds to the command or character before it. When
-    // that was a span just written — a fraction, a radical — the marker has to go
-    // inside it, so the last complete tag is reopened around the script.
     if (ch === '^' || ch === '_') {
       const g = mdMunch(src, i + 1);
       const body = mdMathGroup(g.tex, ch === '^' ? 'sup' : 'sub');
       if (body) {
         flush();
-        const tail = /<\/?[a-zA-Z][^<>]*>\s*$/.exec(out);
-        if (tail) {
-          const cut = out.length - tail[0].length;
-          const close = out.slice(cut).indexOf('</');
-          if (close > -1) {
-            const at = cut + close;
-            out = out.slice(0, at) + body + out.slice(at);
-          } else {
-            out += body;
-          }
-        } else {
-          out += body;
-        }
+        if (scriptAt < 0 || scriptAt > out.length) scriptAt = out.length;
+        out = out.slice(0, scriptAt) + body + out.slice(scriptAt);
+        scriptAt += body.length;
         i = g.end === undefined ? src.length : g.end;
         continue;
       }
@@ -292,9 +406,44 @@ function mdMath(src) {
     if (ch === '\\') {
       const m = /^\\([a-zA-Z]+|.)/.exec(src.slice(i));
       const name = m ? m[1] : '';
-      let end = i + (m ? m[0].length : 1);
+      const end = i + (m ? m[0].length : 1);
+
+      // A whole environment is one block, so it is consumed here rather than left to
+      // the per-character rules — inside it, '&' and '\\' belong to the grid.
+      if (name === 'begin') {
+        const em = /^\{([^}]*)\}/.exec(src.slice(end));
+        const env = em ? em[1].trim() : '';
+        if (em && (MD_MATH_ENVS[env] || MD_MATH_TRANSPARENT.has(env))) {
+          let bodyAt = end + em[0].length;
+          if (env === 'array' && src[bodyAt] === '{') {        // {lcr} column spec
+            const cb = src.indexOf('}', bodyAt);
+            if (cb > -1) bodyAt = cb + 1;
+          }
+          const endTag = '\\end{' + env + '}';
+          const closeAt = src.indexOf(endTag, bodyAt);
+          if (closeAt > -1) {
+            flush();
+            const inner = src.slice(bodyAt, closeAt);
+            const html = MD_MATH_ENVS[env] ? mdMathEnvironment(env, inner) : mdMath(inner.trim());
+            if (html) {
+              out += html;
+              scriptAt = out.length;
+              i = closeAt + endTag.length;
+              continue;
+            }
+          }
+        }
+      }
 
       if (MD_MATH_NOOP.has(name)) { i = end; continue; }
+
+      if (MD_MATH_OPS.has(name)) {
+        flush();
+        out += name;                       // letters only, safe without escaping
+        scriptAt = out.length;
+        i = end;
+        continue;
+      }
 
       if (name === 'frac' || name === 'dfrac' || name === 'tfrac' || name === 'cfrac') {
         const a = mdMunch(src, end);
@@ -302,6 +451,19 @@ function mdMath(src) {
         flush();
         out += '<span class="md-frac"><span class="md-num">' + mdMathGroup(a.tex, 'span')
           + '</span><span class="md-den">' + mdMathGroup(b.tex, 'span') + '</span></span>';
+        scriptAt = out.length;
+        i = b.end === undefined ? src.length : b.end;
+        continue;
+      }
+
+      if (name === 'binom' || name === 'dbinom' || name === 'tbinom' || name === 'choose') {
+        const a = mdMunch(src, end);
+        const b = mdMunch(src, a.end === undefined ? src.length : a.end);
+        flush();
+        out += '<span class="md-binom"><span class="md-frac"><span class="md-num">'
+          + mdMathGroup(a.tex, 'span') + '</span><span class="md-den">'
+          + mdMathGroup(b.tex, 'span') + '</span></span></span>';
+        scriptAt = out.length;
         i = b.end === undefined ? src.length : b.end;
         continue;
       }
@@ -318,6 +480,26 @@ function mdMath(src) {
         flush();
         out += '<span class="md-sqrt">' + (deg ? '<sup>' + mdMathGroup(deg, 'span') + '</sup>' : '')
           + '&radic;<span class="md-radicand">' + mdMathGroup(g.tex, 'span') + '</span></span>';
+        scriptAt = out.length;
+        i = g.end === undefined ? src.length : g.end;
+        continue;
+      }
+
+      if (MD_MATH_ACCENTS[name]) {
+        const g = mdMunch(src, end);
+        flush();
+        out += '<span class="' + MD_MATH_ACCENTS[name] + '">' + mdMath(g.tex) + '</span>';
+        scriptAt = out.length;
+        i = g.end === undefined ? src.length : g.end;
+        continue;
+      }
+
+      if (name === 'mathbb' || name === 'mathbf' || name === 'boldsymbol' || name === 'bm'
+        || name === 'mathcal' || name === 'mathfrak' || name === 'mathsf' || name === 'mathtt') {
+        const g = mdMunch(src, end);
+        flush();
+        out += mdMathStyled(name, g.tex);
+        scriptAt = out.length;
         i = g.end === undefined ? src.length : g.end;
         continue;
       }
@@ -332,6 +514,16 @@ function mdMath(src) {
       if (Object.prototype.hasOwnProperty.call(MD_MATH_SYMBOLS, name)) {
         flush();
         out += MD_MATH_SYMBOLS[name];
+        scriptAt = out.length;
+        i = end;
+        continue;
+      }
+
+      // '\%' '\&' '\#' print their character; '\,', '\;' and '\!' are spacing; '\\'
+      // outside an environment is a break with nowhere to break. All of them are one
+      // character, and none of them should print the backslash.
+      if (name.length === 1 && !/[a-zA-Z]/.test(name)) {
+        plain += '%&#_{}$'.indexOf(name) > -1 ? name : ' ';
         i = end;
         continue;
       }
@@ -359,26 +551,33 @@ const MD_MATH_FUNCS = new Set([
   'log', 'ln', 'exp', 'lim', 'sin', 'cos', 'tan', 'sec', 'csc', 'cot',
   'min', 'max', 'gcd', 'lcm', 'mod', 'sup', 'inf', 'arg', 'det', 'dim', 'deg',
 ]);
-// Deliberately without 'a' and without the logical connectives: a single letter is a
-// variable name, and 'or' is a real operator. A price that happens to use one of
-// these — "costs $100 or $200" — is a rarer mistake than breaking $A \lor B$.
+// Deliberately without 'a' and without the logical connectives spelled with a
+// backslash ('\lor', '\land'): a single letter is a variable name, and the command
+// forms are caught by the maths-signal test below before a word is ever looked at.
+// The bare English connectives are here so "costs $100 or $200" is read as money.
 const MD_MATH_STOPWORDS = new Set([
   'and', 'to', 'per', 'the', 'an', 'of', 'vs', 'but', 'with', 'from', 'than',
+  'or', 'not', 'is', 'are', 'was', 'were', 'be', 'been', 'if', 'then', 'else',
+  'for', 'by', 'on', 'at', 'it', 'as', 'so', 'do', 'does', 'did', 'in', 'we',
 ]);
 
 function mdLooksLikeMath(s) {
   const t = s.trim();
   if (!t || t.length > 2000) return false;
+  // A command, a script, a group or a relation is a signal a price never carries.
+  // This is what lets '$\text{speed}$' and '$distance = rate \times time$' render
+  // even though they contain English words — the words alone used to veto them.
+  // A lone trailing '\' is not a command: 'costs \$5 and \$10' must stay money.
+  if (/\\[a-zA-Z%&#_{}$,;:!|]/.test(t)) return true;
+  if (/[_^{}=]/.test(t)) return true;
   // A price pair — '$5 and $10' — has whitespace on both sides of the inner '$'.
   if (/\s\$\s/.test(s)) return false;
-  // Command names are looked at separately; '_' and '^' join a word to its script
-  // rather than starting a new one, so 'a_i' must not be read as 'a' and 'i'.
-  const bare = t.replace(/\\[a-zA-Z]+/g, ' ').replace(/[_^{}]/g, ' ');
-  for (const w of bare.match(/[A-Za-z]+/g) || []) {
-    if (MD_MATH_STOPWORDS.has(w.toLowerCase())) return false;
+  for (const w of t.match(/[A-Za-z]+/g) || []) {
+    // one letter is a variable, never a stopword
+    if (w.length > 1 && MD_MATH_STOPWORDS.has(w.toLowerCase())) return false;
     if (w.length > 2 && !MD_MATH_FUNCS.has(w.toLowerCase())) return false;
   }
-  return /[A-Za-z\\]/.test(t);
+  return /[A-Za-z]/.test(t);
 }
 
 function mdMathSpan(tex) {
@@ -580,6 +779,9 @@ function mdList(lines, start, stash) {
 
     if (m && m[1].length <= base) {
       if (m[1].length < base) break;              // belongs to an enclosing list
+      // A different marker kind starts a different list. Without this a numbered
+      // list directly after a bullet list was swallowed as more bullets.
+      if (/^\d/.test(m[2]) !== ordered) break;
       items.push({ lines: [m[4]], col: m[1].length + m[2].length + m[3].length, loose: false });
       i += 1;
       continue;
@@ -799,6 +1001,10 @@ const MD_SPOKEN_MATH = {
   degree: 'degrees', circ: 'degrees', ell: 'ell', hbar: 'h bar',
   log: 'log', ln: 'natural log', exp: 'exp', lim: 'limit', sin: 'sine', cos: 'cosine',
   tan: 'tangent', min: 'minimum', max: 'maximum', gcd: 'gcd', lcm: 'lcm',
+  // accents and environment commands; the braces around them are dropped below
+  vec: 'vector', overline: 'bar over', bar: 'bar over', hat: 'hat over',
+  tilde: 'tilde over', mathbb: '', mathbf: '', mathcal: '', mathfrak: '',
+  binom: 'choose', begin: '', end: '',
 };
 
 function mdMathToPlain(s) {
@@ -815,7 +1021,10 @@ function mdMathToPlain(s) {
       : ' ' + name + ' '          // an unknown command is said, not swallowed
   ));
   t = t.replace(/\\/g, ' ').replace(/[{}]/g, ' ').replace(/\$/g, ' ');
-  // '_' and '^' are taken by the speech path as word joins, so they are gone by now
+  // A matrix cell separator and a binomial's two arguments are punctuation, not words
+  t = t.replace(/&/g, ' ');
+  // a script marker is not a word: '$x^2$' is said "x 2", not "x caret 2"
+  t = t.replace(/[_^]/g, ' ');
   return t.replace(/\s+/g, ' ').trim();
 }
 

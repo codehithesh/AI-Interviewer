@@ -127,13 +127,13 @@ const INTERVIEW_VIEW_HTML = `
       </div>
 
       <!-- ===================== COMPOSER =====================
-           One row, in reading order: [+], which puts code INTO the answer, then the
+           One row, in reading order: [</>], which puts code INTO the answer, then the
            answer itself, then the two controls that finish it — [Mic] and [>]. The
            two send-side controls sit together at the end of the line, where the eye
            already is when the typing stops. -->
       <div class="composer">
         <div class="composer-row">
-          <button id="im-plus" class="btn icon-btn" title="Attach code" aria-label="Open the code editor" aria-haspopup="dialog" disabled><span class="ic ic-plus" aria-hidden="true"></span></button>
+          <button id="im-plus" class="btn icon-btn" title="Attach code" aria-label="Open the code editor" aria-haspopup="dialog" disabled><span class="ic ic-code" aria-hidden="true"></span></button>
           <textarea id="im-text" rows="1" placeholder="Type or speak…" aria-label="Your answer" disabled></textarea>
           <button id="im-mic" class="btn icon-btn" title="Native speech-to-text" aria-label="Dictate your answer" disabled><span class="ic ic-mic" aria-hidden="true"></span><span class="rec-label">Recording</span></button>
           <button id="im-send" class="btn primary icon-btn" title="Send" aria-label="Send your answer" disabled><span class="ic ic-send" aria-hidden="true"></span></button>
@@ -145,7 +145,7 @@ const INTERVIEW_VIEW_HTML = `
 
 <!-- ===================== CODE EDITOR POPUP =====================
      A monospace <textarea> with a line-number gutter — no CodeMirror, no Monaco,
-     no CDN. Opened by the composer's [+]. [Insert into answer] does NOT send: it
+     no CDN. Opened by the composer's [</>]. [Insert into answer] does NOT send: it
      drops the draft into the composer as a fenced code block and closes, so prose
      and code leave as one answer. That overrides §5 — see js/code-editor.js for why.
 

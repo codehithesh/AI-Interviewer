@@ -1,7 +1,7 @@
 // ============================================================
 // CODE EDITOR POPUP
 // ============================================================
-// The [+] in the composer opens a monospace <textarea> with a line-number gutter —
+// The [</>] in the composer opens a monospace <textarea> with a line-number gutter —
 // no CodeMirror, no Monaco, no CDN, nothing external (§5). Those two are what stop
 // it being a plain box: the gutter numbers the draft, and Tab / Shift+Tab indent it
 // instead of walking the focus ring out of the field. Anything beyond that (syntax
@@ -27,7 +27,7 @@
 
 // ---------- opening and closing ----------
 function openCodeEditor() {
-  // The [+] is disabled in Ready and Done, where the composer is inert; this guard
+  // The [</>] is disabled in Ready and Done, where the composer is inert; this guard
   // is what keeps a stale keystroke or a programmatic call from popping the dialog
   // over a screen that could not accept its output.
   if (els.btnPlus.disabled) return;
