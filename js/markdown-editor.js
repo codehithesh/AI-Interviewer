@@ -17,9 +17,11 @@
 // The toolbar is plain SOURCE editing, not a rich-text layer. Every button only
 // writes markdown characters into the draft — '**' around a word, a backtick fence
 // around a block, '- ' in front of a line. Nothing is rendered inside the editor, so
-// what you see is exactly what is sent. The button set is markdown.js's feature set
-// and nothing more: a button for syntax renderMarkdown() does not understand would be
-// a button that silently does nothing on send.
+// what you see is exactly what is sent. The set is a convenience subset of what
+// markdown.js understands (headings 1–3, emphasis, inline code, code block, quote,
+// bulleted / numbered / task lists, table, rule, link, inline and display math): a
+// button for syntax renderMarkdown() does not understand would be a button that
+// silently does nothing on send.
 //
 // Three things make the field an editor rather than a stretched box:
 //   · the gutter numbers every line;
@@ -27,9 +29,9 @@
 //     field;
 //   · the toolbar writes markdown over the selection.
 //
-// A close never loses a word: Escape, the ✕, a click on the overlay and an interview
-// ending all leave the draft where it belongs — in the composer, because it was
-// written there as it was typed.
+// A close never loses a word: Escape, the shrink icon, a click on the overlay and an
+// interview ending all leave the draft where it belongs — in the composer, because it
+// was written there as it was typed.
 
 'use strict';
 
@@ -254,8 +256,8 @@ function mdToggleWrap(before, after, placeholder) {
 }
 
 // '- ', '1. ' or '> ' in front of every line the selection touches, removed again if
-// every line already carries it. A blank line is left blank so a list never grows
-// trailing whitespace.
+// every line already carries it. A blank line INSIDE a block is left blank so a list
+// never grows trailing whitespace.
 function mdToggleLinePrefix(prefix) {
   const ta = els.mdInput;
   const value = ta.value;
@@ -264,11 +266,22 @@ function mdToggleLinePrefix(prefix) {
   const range = mdLineRange(value, start, end);
   const lines = value.slice(range.from, range.to).split('\n');
 
-  const marked = lines.filter((line) => line.trim());
+  // A caret on an empty line with nothing to toggle: the marker goes down so the item
+  // can be typed straight after it. This is the case the editor opens in — a blank
+  // answer — and returning the line unchanged there made every list button look dead.
+  if (start === end && !lines[0].trim() && !lines[0].startsWith(prefix)) {
+    const caret = start + prefix.length;
+    replaceMdRange(start, start, prefix, caret, caret);
+    return;
+  }
+
+  // A blank line counts as carrying the prefix only when it actually does, so pressing
+  // the button again on an empty item takes the marker back off instead of doing nothing.
+  const marked = lines.filter((line) => line.trim() || line.startsWith(prefix));
   const allOn = marked.length > 0 && marked.every((line) => line.startsWith(prefix));
   const next = lines.map((line) => {
+    if (allOn) return line.startsWith(prefix) ? line.slice(prefix.length) : line;
     if (!line.trim()) return line;
-    if (allOn) return line.slice(prefix.length);
     return line.startsWith(prefix) ? line : prefix + line;
   });
   replaceMdLines(value, start, end, lines, next);
@@ -286,13 +299,20 @@ function mdHeading(level) {
   const lines = value.slice(range.from, range.to).split('\n');
   const marker = new Array(level + 1).join('#') + ' ';
 
-  const marked = lines.filter((line) => line.trim());
+  // A caret on an empty line, with nothing to toggle — same case as the lists above.
+  if (start === end && !lines[0].trim() && !lines[0].startsWith(marker)) {
+    const caret = start + marker.length;
+    replaceMdRange(start, start, marker, caret, caret);
+    return;
+  }
+
+  const marked = lines.filter((line) => line.trim() || line.startsWith(marker));
   const allOn = marked.length > 0 && marked.every((line) => line.startsWith(marker));
   const next = lines.map((line) => {
-    if (!line.trim()) return line;
     // The heading marker, not a '#' that happens to start the line: a line of prose
     // beginning '#hashtag' is left as it is.
     const bare = line.replace(/^#{1,6}[ \t]+/, '');
+    if (!line.trim()) return allOn && line.startsWith(marker) ? bare : line;
     return allOn ? bare : marker + bare;
   });
   replaceMdLines(value, start, end, lines, next);
@@ -357,17 +377,17 @@ function mdMathBlock() {
   insertMdBlock('$$\n' + body + '\n$$', 3, 3 + body.length);
 }
 
-// '[label](url)' and '![alt](url)': the selection becomes the label, and the placeholder
-// URL is left selected so it can be typed over without reaching for the mouse.
-function mdLink(image) {
+// '[label](url)': the selection becomes the label, and the placeholder URL is left
+// selected so it can be typed over without reaching for the mouse.
+function mdLink() {
   const ta = els.mdInput;
   const value = ta.value;
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
-  const label = value.slice(start, end) || (image ? 'alt text' : 'link text');
-  const open = image ? '![' : '[';
-  const text = open + label + '](url)';
-  const urlStart = start + open.length + label.length + 2;
+  const label = value.slice(start, end) || 'link text';
+  const text = '[' + label + '](url)';
+  // '[' + label + '](' is what precedes the placeholder URL.
+  const urlStart = start + label.length + 3;
   replaceMdRange(start, end, text, urlStart, urlStart + 3);
 }
 
@@ -378,14 +398,10 @@ const MD_ACTIONS = {
   italic: () => mdToggleWrap('*', '*', 'italic text'),
   strike: () => mdToggleWrap('~~', '~~', 'struck text'),
   code: () => mdToggleWrap('`', '`', 'code'),
-  link: () => mdLink(false),
-  image: () => mdLink(true),
+  link: () => mdLink(),
   h1: () => mdHeading(1),
   h2: () => mdHeading(2),
   h3: () => mdHeading(3),
-  h4: () => mdHeading(4),
-  h5: () => mdHeading(5),
-  h6: () => mdHeading(6),
   quote: () => mdToggleLinePrefix('> '),
   codeblock: () => mdCodeBlock(),
   ul: () => mdToggleLinePrefix('- '),

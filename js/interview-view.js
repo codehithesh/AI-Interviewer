@@ -155,9 +155,13 @@ const INTERVIEW_VIEW_HTML = `
 
      The toolbar is source editing only: each button writes markdown characters over
      the selection (a marker pair, a line prefix, a fence) and nothing is rendered
-     here, so the field shows exactly what will be sent. The set is markdown.js's
-     feature set — headings, emphasis, code, quote, lists, tasks, table, rule, link,
-     image, math.
+     here, so the field shows exactly what will be sent. Headings 1–3, emphasis,
+     inline code, code block, quote, bulleted / numbered / task lists, table, rule,
+     link, and inline / display math.
+
+     [Shrink] is the same diagonal pair of arrows as the composer's [expand], pointing
+     inward instead of outward: the way back to the small field. It is a close, but it
+     is not a cancel — the text is the composer's already.
 
      The editor is still hand-rolled, so it carries the two things a code-shaped
      field is unusable without: the gutter, and Tab / Shift+Tab indentation. The
@@ -168,7 +172,7 @@ const INTERVIEW_VIEW_HTML = `
     <div class="modal-head">
       <h3 id="im-md-title">Markdown</h3>
       <div class="head-actions">
-        <button id="im-md-close" class="btn icon-btn" title="Close the editor — your text stays in the answer field" aria-label="Close the markdown editor">✕</button>
+        <button id="im-md-close" class="btn icon-btn" title="Shrink back to the answer field — your text is already in it" aria-label="Close the markdown editor and return to the answer field"><span class="ic ic-shrink" aria-hidden="true"></span></button>
       </div>
     </div>
 
@@ -181,14 +185,10 @@ const INTERVIEW_VIEW_HTML = `
       <button type="button" class="md-tool" data-md="strike" title="Strikethrough — ~~text~~" aria-label="Strikethrough">S</button>
       <button type="button" class="md-tool" data-md="code" title="Inline code — a backtick pair (Ctrl+E)" aria-label="Inline code">&lt;/&gt;</button>
       <button type="button" class="md-tool" data-md="link" title="Link — [text](url) (Ctrl+K)" aria-label="Link">Link</button>
-      <button type="button" class="md-tool" data-md="image" title="Image — ![alt](url)" aria-label="Image">Image</button>
       <span class="md-tool-sep" aria-hidden="true"></span>
       <button type="button" class="md-tool" data-md="h1" title="Heading 1 — # text" aria-label="Heading 1">H1</button>
       <button type="button" class="md-tool" data-md="h2" title="Heading 2 — ## text" aria-label="Heading 2">H2</button>
       <button type="button" class="md-tool" data-md="h3" title="Heading 3 — ### text" aria-label="Heading 3">H3</button>
-      <button type="button" class="md-tool" data-md="h4" title="Heading 4 — #### text" aria-label="Heading 4">H4</button>
-      <button type="button" class="md-tool" data-md="h5" title="Heading 5 — ##### text" aria-label="Heading 5">H5</button>
-      <button type="button" class="md-tool" data-md="h6" title="Heading 6 — ###### text" aria-label="Heading 6">H6</button>
       <span class="md-tool-sep" aria-hidden="true"></span>
       <button type="button" class="md-tool" data-md="quote" title="Blockquote — > text" aria-label="Blockquote">Quote</button>
       <button type="button" class="md-tool" data-md="codeblock" title="Code block — three backticks above and below" aria-label="Code block">Code block</button>
