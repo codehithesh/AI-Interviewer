@@ -36,10 +36,11 @@ and it runs.
    prompt. Press **Save**.
 2. **Start interview.** The interviewer greets you, introduces the session and asks
    the first question — spoken aloud.
-3. Answer. `[Mic]` dictates, the textarea takes typing, `Enter` sends and
-   `Shift+Enter` adds a newline. `[+]` opens a full-screen code editor whose *Insert
-   into answer* puts a fenced block into your answer, so prose and code travel as one
-   message.
+3. Answer. `[Mic]` dictates, the textarea takes typing, and `[>]` sends. `Enter` and
+   `Shift+Enter` both just add a newline — an answer is sent only by the button, so
+   a paragraph can be laid out without half of it going out early. `[</>]` opens a
+   full-screen code editor whose *Insert into answer* puts a fenced block into your
+   answer, so prose and code travel as one message.
 4. `[Cam]` shows a local self-view. It is never recorded and never sent anywhere.
 5. The interview ends when you press `[END]`, when the countdown reaches zero, or when
    the question cap is reached. The evaluation then runs once and appears as the last

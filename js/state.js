@@ -13,8 +13,8 @@
 //    Settings edit mid-interview applies to the next interview rather than
 //    mutating the one in progress.
 //  · `busy` is the single in-flight guard. Every path that can start a model
-//    request — the send button, Enter, the automatic next-question request and
-//    the final evaluation — checks it, so no two requests can be in the air.
+//    request — the send button, [Try again], the automatic next-question request
+//    and the final evaluation — checks it, so no two requests can be in the air.
 
 'use strict';
 

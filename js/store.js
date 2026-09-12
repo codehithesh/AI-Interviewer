@@ -15,9 +15,9 @@
 // The one thing worth knowing: localStorage is scoped to the origin, and a GitHub
 // Pages site is served from a shared <user>.github.io origin, so another project
 // published under the same account could read what this one writes. “Forget saved
-// keys” is the eraser. Nothing the app renders reaches the DOM as HTML — model
-// replies are set with textContent — so a hostile page cannot be used to script
-// the key back out through this app.
+// keys” is the eraser. Chat text — from either side — reaches the DOM only through
+// js/markdown.js, which escapes every character it did not write, so a hostile page
+// cannot use this app to script the key back out.
 
 'use strict';
 

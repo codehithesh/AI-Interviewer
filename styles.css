@@ -412,19 +412,30 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .bubble.ai { background: var(--ai-bubble); border: 1px solid var(--border); color: var(--text); align-self: stretch; border-top-left-radius: 4px; position: relative; }
 .bubble-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; opacity: 0.8; }
 .bubble.user .bubble-header { opacity: 0.9; }
-/* answers arrive with real line breaks; keep them */
+/* A plain body — a notice, an error — keeps the line breaks it was built with; a
+   markdown body switches to normal wrapping at .bubble-body.md below. */
 .bubble-body { white-space: pre-wrap; }
 .bubble.ai.error { border-color: var(--error); }
 .bubble.ai.error .bubble-header { color: var(--error); opacity: 1; }
 
-/* A code block no longer arrives as its own turn: the code editor inserts a fenced
-   snippet into the composer, so the answer is one message and the markdown rules
-   below lay the snippet out. Inside a candidate bubble that needs one adjustment —
-   the bubble is dark green with white text, while the code surface is the page
-   background, which is white in the light theme. Left alone, white text on that
-   white panel is invisible, so the text colour is reset with the surface. */
+/* Markdown inside a candidate bubble. Every rule below borrows a page colour that
+   lands on the wrong surface here: the bubble is dark green with white text, so
+   --accent is the same forest as the bubble and a link would vanish, --text-dim
+   washes out, and the table/code surfaces are page backgrounds that are white in the
+   light theme — left alone, white text on that white panel is invisible. Each is
+   restated in terms of the bubble's own text colour. */
 .bubble.user .bubble-body.md pre,
 .bubble.user .bubble-body.md code { color: var(--text); }
+.bubble.user .bubble-body.md a { color: inherit; }
+.bubble.user .bubble-body.md blockquote {
+  border-left-color: currentColor; color: inherit; opacity: 0.85;
+}
+.bubble.user .bubble-body.md hr { border-top-color: currentColor; opacity: 0.45; }
+.bubble.user .bubble-body.md th,
+.bubble.user .bubble-body.md td { border-color: rgba(255, 255, 255, 0.35); }
+.bubble.user .bubble-body.md th { background: rgba(255, 255, 255, 0.16); }
+.bubble.user .bubble-body.md .md-check { border-color: currentColor; }
+.bubble.user .bubble-body.md .md-check.on { background: currentColor; border-color: currentColor; }
 
 /* [Try again] on a failed turn, inside the error bubble it belongs to */
 .bubble-actions { display: flex; gap: 8px; margin-top: 10px; }

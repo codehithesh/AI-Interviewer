@@ -687,9 +687,18 @@ function mdInline(raw, stash) {
 
   s = mdEmphasis(s);
 
-  // A hard break is two trailing spaces or a backslash at the end of a line. A soft
+  // A hard break is two trailing spaces or a backslash at the end of a line; a soft
   // one is just a newline, which CSS collapses to a space — standard markdown.
-  s = s.replace(/ {2,}\n/g, '<br>\n').replace(/\\\n/g, '<br>\n');
+  //
+  // With mdBreaks on, every newline is a break instead, the way a chat box behaves:
+  // the candidate pressed Enter to get a new line, so that is what the sent answer
+  // shows. The two hard-break spellings are absorbed into the same rule rather than
+  // left to be printed — a trailing backslash would otherwise show up as itself.
+  if (mdBreaks) {
+    s = s.replace(/ {2,}\n/g, '\n').replace(/\\\n/g, '\n').replace(/\n/g, '<br>\n');
+  } else {
+    s = s.replace(/ {2,}\n/g, '<br>\n').replace(/\\\n/g, '<br>\n');
+  }
   return s;
 }
 
@@ -939,12 +948,27 @@ function mdBlocks(lines, stash) {
 }
 
 // ---------- entry points ----------
+// Soft-break mode, and the only reason this is a module-level flag rather than an
+// argument: mdInline() sits six calls deep and is the one place that can tell a break
+// from a newline. It is set for the length of a single renderMarkdown() call.
+//
+// It is on for a candidate's own answer, whose line breaks are deliberate and should
+// survive being sent, and off for the interviewer's replies and the evaluation, which
+// are prose written to reflow. Rendering is synchronous — nothing here returns a
+// promise — so no two renders can overlap and see each other's setting.
+let mdBreaks = false;
+
 // Returns an HTML string. Safe to assign because every character that came from the
 // model was escaped before any tag was written around it.
-function renderMarkdown(src) {
+function renderMarkdown(src, opts) {
   const stash = mdStash();
-  const lines = mdExtractBlocks(mdClean(src).split('\n'), stash);
-  return stash.flush(mdBlocks(lines, stash));
+  mdBreaks = !!(opts && opts.breaks);
+  try {
+    const lines = mdExtractBlocks(mdClean(src).split('\n'), stash);
+    return stash.flush(mdBlocks(lines, stash));
+  } finally {
+    mdBreaks = false;
+  }
 }
 
 // A task box is the one rendered element the reader is meant to touch, so its state
@@ -974,10 +998,11 @@ function wireMarkdown() {
 }
 
 // The chat's entry point. The innerHTML is deliberate and safe: renderMarkdown() is
-// the only producer of this string, and it escapes first.
-function renderMarkdownInto(el, src) {
+// the only producer of this string, and it escapes first. `opts` is passed straight
+// through — `{ breaks: true }` is what a candidate's own answer is rendered with.
+function renderMarkdownInto(el, src, opts) {
   el.classList.add('md');
-  el.innerHTML = renderMarkdown(src);
+  el.innerHTML = renderMarkdown(src, opts);
 }
 
 // A formula read out symbol by symbol is noise, so the common TeX commands become

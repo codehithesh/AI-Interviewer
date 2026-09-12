@@ -164,9 +164,12 @@ function onComposerInput() {
 
 function wireComposer() {
   els.imText.addEventListener('input', onComposerInput);
-  els.imText.addEventListener('keydown', (e) => {
-    // Enter sends, Shift+Enter newlines (§15). sendAnswer() re-checks the guard,
-    // so holding Enter cannot slip a second request past this.
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); els.btnSend.click(); }
-  });
+  // Enter is deliberately NOT bound here: the field keeps its native behaviour, so
+  // Enter and Shift+Enter both insert a newline and [>] is the only way to send. An
+  // answer is often a paragraph or a few lines of reasoning, and a stray Enter must
+  // never fire half of it at the interviewer. Sending from the keyboard is still
+  // possible the ordinary way — tab to [>] and press Enter on the button itself.
+  //
+  // This is not an oversight to be "fixed": a listener that calls preventDefault()
+  // on Enter is exactly what was removed.
 }

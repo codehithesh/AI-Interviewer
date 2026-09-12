@@ -17,11 +17,11 @@
 // The loop is deliberately small, and state.busy is the single gate on it:
 //
 //   [Start interview] ─▶ requestInterviewerTurn() ─▶ greeting + question 1
-//   answer ([>] / Enter / code) ─▶ pushHistory ─▶ requestInterviewerTurn() ─▶ question N
+//   answer ([>] / [+]) ─▶ pushHistory ─▶ requestInterviewerTurn() ─▶ question N
 //
 // Every path that can start a request goes through requestInterviewerTurn(), and
 // the first thing it does is refuse if one is already in the air. That is what stops
-// a double-clicked [>], a held Enter and the automatic follow-up request from ever
+// a double-clicked [>] and the automatic follow-up request from ever
 // issuing two concurrent calls (§8.3) — the guard is not repeated at the call sites.
 //
 // The model is asked for one turn at a time on purpose: the client counts questions
@@ -43,10 +43,10 @@ let sessionId = 0;
 // Rendering
 // ============================================================
 
-// Which role wrote a turn decides how it renders, and for a model reply that is
-// also the whole security boundary: markdown is only ever rendered through
-// js/markdown.js, which escapes before it writes a single tag. A typed answer and an
-// error are plain text.
+// Which role wrote a turn decides how it renders. Markdown — from either side — is
+// only ever rendered through js/markdown.js, which escapes before it writes a single
+// tag, and that is the whole security boundary. A notice or an error never goes
+// through it and stays plain text (see bubbleBodyFor()).
 function turnListItem(turn) {
   const li = document.createElement('li');
   li.className = 'turn';
@@ -55,12 +55,29 @@ function turnListItem(turn) {
   return li;
 }
 
-// Does this answer carry a code block? With the code editor inserting a fenced
-// snippet into the composer rather than sending on its own, an answer is prose and
-// code in one message — this is what tells the renderer to lay it out as markdown so
-// the snippet becomes a real code block instead of a wall of backticks.
-function hasCodeFence(text) {
-  return /^ {0,3}(?:`{3,}|~{3,})/m.test(text || '');
+// Does this turn's text get laid out as markdown? The model writes markdown, and the
+// candidate may write it too — a table, a formula, a fenced snippet. The security
+// boundary does not move: js/markdown.js is escape-first, so it escapes every
+// character it did not itself write before a tag reaches the DOM, and text from
+// either side can only ever produce the tags in that file. Everything else a turn can
+// be — a notice, a provider error — stays textContent, which cannot become markup.
+//
+// The two sides are rendered differently on purpose. A candidate's answer is typed
+// into a textarea whose Enter key inserts a newline, so its line breaks are the ones
+// they meant to type and are kept (`breaks`); the interviewer's prose reflows like a
+// document, where a single newline is just a space.
+function bubbleBodyFor(turn) {
+  const body = document.createElement('div');
+  body.className = 'bubble-body';
+  const md = typeof renderMarkdownInto === 'function';
+  const fromModel = turn.role === 'ai' && turn.kind === 'question';
+  const prose = fromModel || (turn.role === 'user' && turn.kind === 'answer');
+  if (prose && md) {
+    renderMarkdownInto(body, turn.text, { breaks: !fromModel });
+  } else {
+    body.textContent = turn.text;                 // textContent: never markup
+  }
+  return body;
 }
 
 // [Try again] on a failed turn. The candidate's answer is already in the history —
@@ -93,28 +110,6 @@ function retryRow(action) {
   });
   row.appendChild(btn);
   return row;
-}
-
-// The body of a bubble, shared by every module that renders a turn so the two
-// security rules below cannot be applied in one place and forgotten in another:
-// a model reply is the only thing that goes through the markdown parser, and it is
-// that parser (js/markdown.js) which escapes before it writes a tag. Everything
-// else — a typed answer, a notice, a provider error — is textContent, because
-// textContent cannot become markup. A candidate answer is the one exception: when
-// it carries a fenced snippet the fence has to be laid out, so it is rendered as
-// markdown too — but only because hasCodeFence() proved there is a fence in it.
-function bubbleBodyFor(turn) {
-  const body = document.createElement('div');
-  body.className = 'bubble-body';
-  const md = typeof renderMarkdownInto === 'function';
-  if (turn.role === 'ai' && turn.kind === 'question' && md) {
-    renderMarkdownInto(body, turn.text);          // the model writes markdown
-  } else if (turn.role === 'user' && hasCodeFence(turn.text) && md) {
-    renderMarkdownInto(body, turn.text);          // prose + a fenced snippet
-  } else {
-    body.textContent = turn.text;                 // textContent: never markup
-  }
-  return body;
 }
 
 // ============================================================
@@ -547,7 +542,7 @@ function reportTurnError(message, opts) {
 // greeting plus first question, or the question that follows the answer just sent.
 async function requestInterviewerTurn() {
   // The single in-flight guard (§8.3). Every caller relies on this one check rather
-  // than carrying its own, so the send button, Enter, [Try again] and the automatic
+  // than carrying its own, so the send button, [Try again] and the automatic
   // follow-up cannot issue two requests between them.
   if (state.view !== 'live' || state.busy) return;
 
@@ -567,7 +562,7 @@ async function requestInterviewerTurn() {
   }
 
   // A turn cannot be requested past the cap, however the request got here (an
-  // answer, Enter, [Try again]). The cap normally ends the interview first, so this
+  // answer, [Try again]). The cap normally ends the interview first, so this
   // is the belt to that brace — it also covers the moment between the last question
   // being asked and the cap being applied, when the composer is briefly answerable.
   if (state.config.questions && state.questionNumber >= state.config.questions) return;
