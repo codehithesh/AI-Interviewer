@@ -18,10 +18,10 @@
 //     account). They are also copied onto the evaluation when it runs, because that
 //     is the pair that actually scored the transcript. If the user switches provider
 //     after the interview, the file records the switch AND what the score came from.
-//   · There is no separate code-attachment turn to distinguish. The code editor
-//     inserts a fenced block into the composer, so a candidate turn carrying code is
-//     ONE answer — the Markdown export writes it out verbatim, fence and all, and
-//     the JSON keeps it in the same `text`.
+//   · There is no separate code-attachment turn to distinguish. The markdown editor
+//     is the composer made bigger, not a second message, so an answer written there
+//     is ONE turn: the Markdown export writes it out verbatim, and the JSON keeps it
+//     in the same `text`.
 //
 // The menu lives in the header, and export is enabled whenever the transcript holds
 // at least one turn, so a live session can be saved too — not only a finished one.
@@ -158,9 +158,10 @@ function buildMarkdown() {
       // An interviewer reply is already markdown and is written out exactly as it
       // arrived: blank-line-separating it, as a typed message needs, would put empty
       // lines inside a fenced code block and break the fence. A typed answer is
-      // plain text — and may itself carry a fence from the code editor, which must
-      // survive for the same reason — so those turns are written verbatim too. The
-      // paragraph-reflow trick was only ever right for text with no blocks in it.
+      // markdown too — written in the full-screen editor or straight into the field,
+      // and may carry a fence of its own, which must survive for the same reason — so
+      // those turns are written verbatim too. The paragraph-reflow trick was only ever
+      // right for text with no blocks in it.
       md += turn.text + '\n\n';
     }
   }

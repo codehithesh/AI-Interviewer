@@ -4,8 +4,9 @@
 
 A voice-first interview practice app. You configure an interview once in Settings,
 press **Start interview**, and an AI interviews you out loud — one question at a time.
-You answer by speaking or by typing, optionally attaching code from a code editor
-popup. When the interview ends, a single evaluation is written into the transcript.
+You answer by speaking or by typing, optionally expanding the answer field into a
+full-screen markdown editor. When the interview ends, a single evaluation is written
+into the transcript.
 
 It is a static site: `index.html` plus `styles.css` and the files in `js/`, with no
 build step, no dependencies, and no backend of any kind. Open it from a static host
@@ -38,9 +39,11 @@ and it runs.
    the first question — spoken aloud.
 3. Answer. `[Mic]` dictates, the textarea takes typing, and `[>]` sends. `Enter` and
    `Shift+Enter` both just add a newline — an answer is sent only by the button, so
-   a paragraph can be laid out without half of it going out early. `[</>]` opens a
-   full-screen code editor whose *Insert into answer* puts a fenced block into your
-   answer, so prose and code travel as one message.
+   a paragraph can be laid out without half of it going out early. The expand icon
+   opens the answer field full screen, with line numbers and a markdown toolbar
+   (headings, emphasis, code, lists, tasks, tables, rules, links and math). It is
+   the same text, bigger: whatever you type there is written straight back into the
+   field, and the markdown is sent exactly as written.
 4. `[Cam]` shows a local self-view. It is never recorded and never sent anywhere.
 5. The interview ends when you press `[END]`, when the countdown reaches zero, or when
    the question cap is reached. The evaluation then runs once and appears as the last
@@ -120,13 +123,13 @@ account.
 | --- | --- |
 | `index.html` | The single page: mount points, boot guard, script order. |
 | `styles.css` | All styling, the wiggle animation and `prefers-reduced-motion`. |
-| `js/interview-view.js` | Interview screen markup: header, rail, chat, composer, code popup. |
+| `js/interview-view.js` | Interview screen markup: header, rail, chat, composer, markdown editor. |
 | `js/interview.js` | Ready/Live/Done, the answer → question loop, the timer, the question cap. |
 | `js/interviewer.js` | The interviewer system prompt, reply parsing, history trimming. |
 | `js/evaluation.js` | The end-of-interview evaluation prompt, call and rendering. |
 | `js/participants.js` | The AI tile's speaking wiggle and the webcam self-view. |
 | `js/tts.js` / `js/stt.js` | Native text-to-speech and speech-to-text. |
-| `js/code-editor.js` | The code popup and its draft. |
+| `js/markdown-editor.js` | The full-screen answer editor: line numbers, Tab indent, the formatting toolbar, and the live write-back into the composer. |
 | `js/api.js` / `js/providers.js` | The only network layer, and the provider definitions. |
 | `js/store.js` / `js/settings.js` / `js/settings-view.js` | Saved preferences and the Settings modal. |
 | `js/export.js` | JSON and Markdown export. |

@@ -156,7 +156,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ic-monitor  { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjIwIiBoZWlnaHQ9IjE0IiByeD0iMiIgcnk9IjIiLz48bGluZSB4MT0iOCIgeTE9IjIxIiB4Mj0iMTYiIHkyPSIyMSIvPjxsaW5lIHgxPSIxMiIgeTE9IjE3IiB4Mj0iMTIiIHkyPSIyMSIvPjwvc3ZnPg=='); }
 .ic-trash    { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMyA2IDUgNiAyMSA2Ii8+PHBhdGggZD0iTTE5IDZ2MTRhMiAyIDAgMCAxLTIgMkg3YTIgMiAwIDAgMS0yLTJWNm0zIDBWNGEyIDIgMCAwIDEgMi0yaDRhMiAyIDAgMCAxIDIgMnYyIi8+PGxpbmUgeDE9IjEwIiB5MT0iMTEiIHgyPSIxMCIgeTI9IjE3Ii8+PGxpbmUgeDE9IjE0IiB5MT0iMTEiIHgyPSIxNCIgeTI9IjE3Ii8+PC9zdmc+'); }
 .ic-cam      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEyIiByeD0iMiIvPjxwYXRoIGQ9Ik0xNSAxMWw3LTR2MTBsLTctNHoiLz48L3N2Zz4='); }
-.ic-code     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0ibTE4IDE2IDQtNC00LTQiLz48cGF0aCBkPSJtNiA4LTQgNCA0IDQiLz48cGF0aCBkPSJtMTQuNSA0LTUgMTYiLz48L3N2Zz4='); }
+.ic-expand   { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMyAyMSAzIDIxIDkiLz48cG9seWxpbmUgcG9pbnRzPSI5IDIxIDMgMjEgMyAxNSIvPjxsaW5lIHgxPSIyMSIgeTE9IjMiIHgyPSIxNCIgeTI9IjEwIi8+PGxpbmUgeDE9IjMiIHkxPSIyMSIgeDI9IjEwIiB5Mj0iMTQiLz48L3N2Zz4='); }
 .ic-mic      { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHJlY3QgeD0iOSIgeT0iMiIgd2lkdGg9IjYiIGhlaWdodD0iMTEiIHJ4PSIzIiBmaWxsPSIjMDAwIiBzdHJva2U9Im5vbmUiLz4KICA8cGF0aCBkPSJNNSAxMWE3IDcgMCAwIDAgMTQgMCIvPgogIDxsaW5lIHgxPSIxMiIgeTE9IjE4IiB4Mj0iMTIiIHkyPSIyMiIvPgo8L3N2Zz4='); }
 .ic-send     { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTQgMTJsMTYtOC02IDE2LTMuMi02LjR6Ii8+CiAgPHBhdGggZD0iTTEwLjggMTMuNkwyMCA0Ii8+Cjwvc3ZnPg=='); }
 .ic-download { --icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgPHBhdGggZD0iTTEyIDN2MTIiLz4KICA8cGF0aCBkPSJNNyAxMWw1IDUgNS01Ii8+CiAgPHBhdGggZD0iTTQgMjBoMTYiLz4KPC9zdmc+'); }
@@ -541,7 +541,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 }
 /* pre keeps its own white-space from the UA sheet — code is the one place a line
    break is the author's and not reflowable. tab-size is NOT left to the UA sheet:
-   the code editor inserts a real tab (js/code-editor.js) and draws it at two
+   the markdown editor inserts a real tab (js/markdown-editor.js) and draws it at two
    columns, so a snippet here must use the same two or the same indentation the
    user checked in the editor arrives four times wider in the sent bubble. */
 .bubble-body.md pre {
@@ -791,57 +791,82 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 .iv-status,
 .composer { padding-inline: max(16px, calc((100% - var(--chat-max)) / 2)); }
 
-/* ---------- the code editor popup ----------
-   A monospace textarea with a line-number gutter. Not a permanent panel, not a
-   code editor library: it opens from the composer's [+], keeps its draft while
-   closed, and [Insert into answer] folds the code into the answer. Line numbers
-   and Tab indentation are hand-rolled in js/code-editor.js.
+/* ---------- the markdown editor ----------
+   The answer field, full screen: the composer's own text in a monospace textarea with
+   a line-number gutter and a formatting toolbar under the header. Not a permanent
+   panel, not an editor library — it opens from the composer's [expand], and every
+   keystroke is written straight back into the composer (js/markdown-editor.js), so
+   there is nothing to insert and no draft to keep.
 
-   FULL SCREEN ON EVERY VIEWPORT — desktop included. It used to be an 820×640 box
-   on a wide monitor, which gave a code fragment the same room as a settings form
-   and forced a scroll inside a scroll. Writing code is the one thing this app asks
-   the user to do at length, so the editor takes the whole window at every size.
+   FULL SCREEN ON EVERY VIEWPORT — desktop included — and genuinely edge to edge. The
+   editing surface used to sit in a bordered, rounded box inset from the window on all
+   four sides, which spent a frame's worth of room on nothing; the body now has no
+   padding and the surface no border or radius, so the field runs from under the
+   toolbar to the bottom of the window, the whole width of it. Writing is the one
+   thing this app asks the user to do at length.
 
    position/inset are what actually deliver that. The overlay is a padded flex box
    that centres its modal, and the 20px gutter is right for the settings form — so
-   rather than depend on a :has() selector or a media query to strip it, the code
+   rather than depend on a :has() selector or a media query to strip it, the markdown
    modal simply positions itself against the viewport, which ignores the overlay's
    padding altogether. The frame's radius, border and shadow are dropped with it:
    nothing sits behind the modal now, so there is no edge left to round. */
-.code-modal {
+.md-modal {
   position: fixed; inset: 0;
   width: auto; height: auto; max-width: none; max-height: none;
   border: none; border-radius: 0; box-shadow: none;
 }
-.code-body { padding: 12px 14px 14px; }
+/* The toolbar is a bar, so it keeps a small inset for its buttons; the editor below
+   it gets none, which is what makes the writing surface end to end. */
+.md-body { padding: 0; gap: 0; overflow: hidden; }
 
-/* The frame and the vertical padding sit on the WRAPPER, not on the textarea. With
-   no padding above either child, the gutter's first number and the first line of
-   code start at the same edge and stay aligned at every scroll position — put the
-   padding on the textarea instead and the numbers drift down by it. */
-.code-editor {
-  flex: 1 1 auto; min-height: 0; display: flex; align-items: stretch;
-  overflow: hidden; padding-block: 10px;
-  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+/* Formatting buttons, in one wrapping row directly under the modal header. Each one
+   only writes markdown characters over the selection — nothing here renders. */
+.md-toolbar {
+  flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 8px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
 }
-/* The textarea's own focus ring would sit inside this frame; the frame itself takes
-   the accent instead, so focus reads as one box rather than two. */
-.code-editor:focus-within { border-color: var(--accent); }
+.md-tool {
+  min-width: 30px; height: 28px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: var(--text); font-size: 12px; line-height: 1; cursor: pointer;
+}
+.md-tool:hover { background: var(--panel-2); border-color: var(--border); }
+.md-tool:active { background: var(--border); }
+/* The three letters that have to look like what they do. */
+.md-tool[data-md="bold"] { font-weight: 700; }
+.md-tool[data-md="italic"] { font-style: italic; }
+.md-tool[data-md="strike"] { text-decoration: line-through; }
+/* The divider between the inline group, the headings, the block group and the math. */
+.md-tool-sep { width: 1px; height: 20px; align-self: center; background: var(--border); margin: 0 3px; }
 
-.code-gutter {
+/* No padding, no border, no radius: the surface IS the modal below the toolbar, and
+   it fills whatever height is left. */
+.md-editor {
+  flex: 1 1 auto; min-height: 0; display: flex; align-items: stretch;
+  overflow: hidden; background: var(--bg);
+}
+
+/* The gutter's left inset and the text's are the only breathing room left in the
+   editor, and they sit on the CHILDREN rather than the wrapper: with no padding above
+   either, the gutter's first number and the first line of text start at the same edge
+   and stay aligned at every scroll position. */
+.md-gutter {
   flex: 0 0 auto; overflow: hidden; user-select: none;
   padding: 0 10px 0 12px; border-right: 1px solid var(--border);
   color: var(--text-dim); text-align: right;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px; line-height: 1.55;
 }
-/* The numbers: one text node, scrolled by transform in js/code-editor.js. pre keeps
+/* The numbers: one text node, scrolled by transform in js/markdown-editor.js. pre keeps
    the newline-separated numbers on their own rows. */
-.code-gutter-inner { display: block; white-space: pre; }
+.md-gutter-inner { display: block; white-space: pre; }
 
-/* font-size and line-height are deliberately identical to .code-gutter above. Drift
-   between them is the one thing that would slide the numbers off the code. */
-.code-input {
+/* font-size and line-height are deliberately identical to .md-gutter above. Drift
+   between them is the one thing that would slide the numbers off the text. */
+.md-input {
   flex: 1 1 auto; min-width: 0; min-height: 0; width: 100%; resize: none;
   padding: 0 12px; background: transparent; border: 0; border-radius: 0;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -850,14 +875,20 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   white-space: pre;
   overflow: auto;
 }
-.code-input:focus, .code-input:focus-visible { outline: none; border-color: transparent; }
+.md-input:focus, .md-input:focus-visible { outline: none; border-color: transparent; }
+/* The textarea's own focus ring used to be suppressed because the frame around it
+   took the accent instead. There is no frame now, and an outline on a surface that
+   runs to the window edges would be clipped by three of them — so the accent is drawn
+   as an inset rule on the gutter, which reads as one box with focus and shifts no
+   layout. */
+.md-editor:focus-within .md-gutter { box-shadow: inset 2px 0 0 var(--accent); color: var(--text); }
 
 /* ---------- generic form rows, and one utility ---------- */
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }
 .field { display: flex; flex-direction: column; }
 .field input, .field select, .field textarea { width: 100%; }
 /* Visible to a screen reader, out of the visual layout — used for the label on
-   the code editor, which has a heading already but still needs an accessible name. */
+   the markdown editor, which has a heading already but still needs an accessible name. */
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;

@@ -14,9 +14,9 @@
 function wireGlobals() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      // Escape closes the code editor and the Settings modal (§15). The code
-      // editor is closed through its own function so a non-empty draft is kept.
-      if (typeof closeCodeEditor === 'function') closeCodeEditor();
+      // Escape closes the markdown editor and the Settings modal (§15). The editor
+      // is closed through its own function so focus goes back to the answer field.
+      if (typeof closeMarkdownEditor === 'function') closeMarkdownEditor();
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach((ov) => closeModal(ov));
       if (typeof closeExportMenu === 'function') closeExportMenu();
     }
@@ -28,11 +28,11 @@ async function init() {
   cacheEls();
 
   // 2 · wiring (synchronous, so the UI is live immediately).
-  // initCodeEditor() comes before wireModals() on purpose: it attaches the code
-  // popup's own overlay handler first, so an overlay click closes it exactly as the
-  // ✕ does — keeping the draft and handing focus back to the composer — instead of
-  // letting the generic handler hide the modal before the draft is written down.
-  initCodeEditor();
+  // initMarkdownEditor() comes before wireModals() on purpose: it attaches the
+  // editor's own overlay handler first, so an overlay click closes it exactly as the
+  // ✕ does — handing focus back to the composer — instead of letting the generic
+  // handler hide the modal first.
+  initMarkdownEditor();
   wireModals();
   wireToasts();
   wireGlobals();

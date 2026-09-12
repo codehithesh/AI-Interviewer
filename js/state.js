@@ -50,10 +50,9 @@ const state = {
   answers: [],            // candidate answers only, for the evaluation
   questionNumber: 0,
 
-  // ---------- media / draft ----------
+  // ---------- media ----------
   cameraOn: false,
   stream: null,           // local MediaStream — never leaves the browser
-  codeDraft: '',          // kept while the code popup is closed
 
   // ---------- speech preferences ----------
   speech: { voice: '', rate: 1, autoSpeak: true },

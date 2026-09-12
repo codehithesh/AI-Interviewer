@@ -443,9 +443,10 @@ function endInterview(reason) {
   if (typeof discardDictation === 'function') discardDictation();
   else if (typeof stopListening === 'function') stopListening();
   if (typeof stopCamera === 'function') stopCamera();
-  // The code popup can outlive the interview — the countdown can expire while it is
-  // open — and Done's composer takes no input, so it closes with its draft kept.
-  if (typeof closeCodeEditor === 'function') closeCodeEditor();
+  // The markdown editor can outlive the interview — the countdown can expire while it
+  // is open — and Done's composer takes no input, so it closes. Its text is already in
+  // the composer, which is where the editor wrote every keystroke.
+  if (typeof closeMarkdownEditor === 'function') closeMarkdownEditor();
 
   setView('done');
   paintTimer();
@@ -479,11 +480,9 @@ function resetSession() {
   if (typeof discardDictation === 'function') discardDictation();
   else if (typeof stopListening === 'function') stopListening();
   if (typeof stopCamera === 'function') stopCamera();
-  // The popup and its draft go with the session: the composer is emptied just
-  // below, and code kept from a finished interview would otherwise reappear under
-  // the next one. closeCodeEditor() saves the draft first, so it is cleared after.
-  if (typeof closeCodeEditor === 'function') closeCodeEditor();
-  state.codeDraft = '';
+  // The editor goes with the session: the composer is emptied just below, and an
+  // answer kept from a finished interview would otherwise reappear under the next one.
+  if (typeof closeMarkdownEditor === 'function') closeMarkdownEditor();
 
   // A reply still in flight belongs to the session that is being thrown away.
   sessionId += 1;
@@ -696,9 +695,9 @@ function speakInterviewer(text) {
   speakReply(text);
 }
 
-// Send what the composer holds. One message, whether it is prose, a fenced snippet
-// from the code editor, or prose around one — the editor is a writing aid, so code
-// arrives here already part of the answer.
+// Send what the composer holds. One message, whatever it contains — the markdown
+// editor is only the field made bigger, a writing aid, so anything written there is
+// already part of the answer and its markdown is rendered when the bubble is painted.
 function sendAnswer() {
   if (state.view !== 'live' || state.busy || state.speaking) return;
 

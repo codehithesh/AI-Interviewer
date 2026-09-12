@@ -8,8 +8,8 @@
 //   header      — title, timer, [Export], [Settings]  → js/export.js, js/interview.js
 //   rail        — AI tile + candidate tile + [Cam]    → js/participants.js
 //   transcript  — bubbles + readiness card            → js/interview.js
-//   composer    — [+], text, [Mic], [>]               → js/composer.js
-//   code popup  — monospace textarea                  → js/code-editor.js
+//   composer    — [expand], text, [Mic], [>]          → js/composer.js
+//   md popup    — full-screen editor + toolbar        → js/markdown-editor.js
 //
 // Every control is disabled in the markup and then enabled by updateControls():
 // the screen boots into Ready, where the composer is deliberately inert, so a
@@ -127,13 +127,13 @@ const INTERVIEW_VIEW_HTML = `
       </div>
 
       <!-- ===================== COMPOSER =====================
-           One row, in reading order: [</>], which puts code INTO the answer, then the
-           answer itself, then the two controls that finish it — [Mic] and [>]. The
-           two send-side controls sit together at the end of the line, where the eye
-           already is when the typing stops. -->
+           One row, in reading order: [expand], which opens the answer field full
+           screen, then the answer itself, then the two controls that finish it —
+           [Mic] and [>]. The two send-side controls sit together at the end of the
+           line, where the eye already is when the typing stops. -->
       <div class="composer">
         <div class="composer-row">
-          <button id="im-plus" class="btn icon-btn" title="Attach code" aria-label="Open the code editor" aria-haspopup="dialog" disabled><span class="ic ic-code" aria-hidden="true"></span></button>
+          <button id="im-plus" class="btn icon-btn" title="Expand the answer field" aria-label="Open the full-screen markdown editor" aria-haspopup="dialog" disabled><span class="ic ic-expand" aria-hidden="true"></span></button>
           <textarea id="im-text" rows="1" placeholder="Type or speak…" aria-label="Your answer" disabled></textarea>
           <button id="im-mic" class="btn icon-btn" title="Native speech-to-text" aria-label="Dictate your answer" disabled><span class="ic ic-mic" aria-hidden="true"></span><span class="rec-label">Recording</span></button>
           <button id="im-send" class="btn primary icon-btn" title="Send" aria-label="Send your answer" disabled><span class="ic ic-send" aria-hidden="true"></span></button>
@@ -143,31 +143,70 @@ const INTERVIEW_VIEW_HTML = `
   </div>
 </div>
 
-<!-- ===================== CODE EDITOR POPUP =====================
-     A monospace <textarea> with a line-number gutter — no CodeMirror, no Monaco,
-     no CDN. Opened by the composer's [</>]. [Insert into answer] does NOT send: it
-     drops the draft into the composer as a fenced code block and closes, so prose
-     and code leave as one answer. That overrides §5 — see js/code-editor.js for why.
+<!-- ===================== MARKDOWN EDITOR =====================
+     The answer field, full screen: the same text in a monospace <textarea> with a
+     line-number gutter and a formatting toolbar. No CodeMirror, no Monaco, no CDN.
+     Opened by the composer's [expand] icon.
 
-     The editor is still hand-rolled, so it carries only the two things a code
-     field is unusable without: the gutter, and Tab / Shift+Tab indentation
-     (js/code-editor.js). The gutter is decorative — the textarea already
-     announces its own content — so it is hidden from assistive technology
-     rather than read out as numbers. -->
-<div id="im-code-modal" class="modal-overlay hidden">
-  <div class="modal code-modal" role="dialog" aria-modal="true" aria-labelledby="im-code-title">
+     It is the composer made bigger, not a separate message: opening copies the
+     field's text in, and every edit is written straight back to it — which is why
+     there is no [Insert] button. Closing never loses a word, and [>] stays the only
+     way to send. See js/markdown-editor.js.
+
+     The toolbar is source editing only: each button writes markdown characters over
+     the selection (a marker pair, a line prefix, a fence) and nothing is rendered
+     here, so the field shows exactly what will be sent. The set is markdown.js's
+     feature set — headings, emphasis, code, quote, lists, tasks, table, rule, link,
+     image, math.
+
+     The editor is still hand-rolled, so it carries the two things a code-shaped
+     field is unusable without: the gutter, and Tab / Shift+Tab indentation. The
+     gutter is decorative — the textarea already announces its own content — so it is
+     hidden from assistive technology rather than read out as numbers. -->
+<div id="im-md-modal" class="modal-overlay hidden">
+  <div class="modal md-modal" role="dialog" aria-modal="true" aria-labelledby="im-md-title">
     <div class="modal-head">
-      <h3 id="im-code-title">Code</h3>
+      <h3 id="im-md-title">Markdown</h3>
       <div class="head-actions">
-        <button id="im-code-insert" class="btn primary" title="Add this code to your answer as a code block" disabled>Insert into answer</button>
-        <button id="im-code-close" class="btn icon-btn" title="Close the code editor, keeping the draft" aria-label="Close the code editor, keeping the draft">✕</button>
+        <button id="im-md-close" class="btn icon-btn" title="Close the editor — your text stays in the answer field" aria-label="Close the markdown editor">✕</button>
       </div>
     </div>
-    <div class="modal-body code-body">
-      <label class="sr-only" for="im-code">Code to add to your answer</label>
-      <div class="code-editor">
-        <div class="code-gutter" aria-hidden="true"><span id="im-code-gutter" class="code-gutter-inner">1</span></div>
-        <textarea id="im-code" class="code-input" spellcheck="false" autocomplete="off" placeholder="Paste or type code here — [Insert into answer] adds it to your answer as a code block."></textarea>
+
+    <!-- Formatting, under the header bar and above the text. aria-label plus role=group,
+         not role=toolbar: the buttons are reached with Tab like every other control here,
+         and a toolbar role would promise arrow-key navigation that is not implemented. -->
+    <div id="im-md-toolbar" class="md-toolbar" role="group" aria-label="Markdown formatting">
+      <button type="button" class="md-tool" data-md="bold" title="Bold — **text** (Ctrl+B)" aria-label="Bold">B</button>
+      <button type="button" class="md-tool" data-md="italic" title="Italic — *text* (Ctrl+I)" aria-label="Italic">I</button>
+      <button type="button" class="md-tool" data-md="strike" title="Strikethrough — ~~text~~" aria-label="Strikethrough">S</button>
+      <button type="button" class="md-tool" data-md="code" title="Inline code — a backtick pair (Ctrl+E)" aria-label="Inline code">&lt;/&gt;</button>
+      <button type="button" class="md-tool" data-md="link" title="Link — [text](url) (Ctrl+K)" aria-label="Link">Link</button>
+      <button type="button" class="md-tool" data-md="image" title="Image — ![alt](url)" aria-label="Image">Image</button>
+      <span class="md-tool-sep" aria-hidden="true"></span>
+      <button type="button" class="md-tool" data-md="h1" title="Heading 1 — # text" aria-label="Heading 1">H1</button>
+      <button type="button" class="md-tool" data-md="h2" title="Heading 2 — ## text" aria-label="Heading 2">H2</button>
+      <button type="button" class="md-tool" data-md="h3" title="Heading 3 — ### text" aria-label="Heading 3">H3</button>
+      <button type="button" class="md-tool" data-md="h4" title="Heading 4 — #### text" aria-label="Heading 4">H4</button>
+      <button type="button" class="md-tool" data-md="h5" title="Heading 5 — ##### text" aria-label="Heading 5">H5</button>
+      <button type="button" class="md-tool" data-md="h6" title="Heading 6 — ###### text" aria-label="Heading 6">H6</button>
+      <span class="md-tool-sep" aria-hidden="true"></span>
+      <button type="button" class="md-tool" data-md="quote" title="Blockquote — > text" aria-label="Blockquote">Quote</button>
+      <button type="button" class="md-tool" data-md="codeblock" title="Code block — three backticks above and below" aria-label="Code block">Code block</button>
+      <button type="button" class="md-tool" data-md="ul" title="Bulleted list — - item" aria-label="Bulleted list">• List</button>
+      <button type="button" class="md-tool" data-md="ol" title="Numbered list — 1. item" aria-label="Numbered list">1. List</button>
+      <button type="button" class="md-tool" data-md="task" title="Task list — - [ ] item" aria-label="Task list">☐ Task</button>
+      <button type="button" class="md-tool" data-md="table" title="Table — | a | b | with a --- delimiter row" aria-label="Table">Table</button>
+      <button type="button" class="md-tool" data-md="hr" title="Horizontal rule — ---" aria-label="Horizontal rule">―</button>
+      <span class="md-tool-sep" aria-hidden="true"></span>
+      <button type="button" class="md-tool" data-md="math" title="Inline math — $x$" aria-label="Inline math">$x$</button>
+      <button type="button" class="md-tool" data-md="mathblock" title="Display math — $$ on its own lines" aria-label="Display math">$$x$$</button>
+    </div>
+
+    <div class="modal-body md-body">
+      <label class="sr-only" for="im-md">Your answer, as Markdown</label>
+      <div class="md-editor">
+        <div class="md-gutter" aria-hidden="true"><span id="im-md-gutter" class="md-gutter-inner">1</span></div>
+        <textarea id="im-md" class="md-input" autocomplete="off" placeholder="Your answer, full screen. Type Markdown here — the toolbar above adds the syntax, and it is sent exactly as written."></textarea>
       </div>
     </div>
   </div>
