@@ -55,6 +55,12 @@ const TYPE_BRIEF = {
   technical: 'This is a technical interview: focus on technical depth, concrete design decisions, and the trade-offs behind them.',
   behavioral: 'This is a behavioral interview: focus on past situations, what the candidate personally did, and what came of it.',
   general: 'This is a general interview: mix background, motivation, and fit for the role.',
+  hr_screening: 'This is an HR screening interview: focus on the candidate\'s background, motivation, and fit for the company culture.',
+  coding: 'This is a coding interview: focus on the candidate\'s ability to write correct, efficient, and maintainable code.',
+  system_design: 'This is a system design interview: focus on the candidate\'s ability to design scalable and robust systems.',
+  case_study: 'This is a case study interview: focus on the candidate\'s problem-solving skills and ability to analyze complex scenarios.',
+  culture_fit: 'This is a culture fit interview: focus on the candidate\'s alignment with the company\'s values and work environment.',
+  final_executive: 'This is a final executive interview: focus on the candidate\'s overall suitability for the role, leadership qualities, and strategic thinking.',
 };
 
 const DIFFICULTY_BRIEF = {

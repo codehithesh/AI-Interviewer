@@ -384,7 +384,7 @@ function snapshotConfig() {
   const c = (prefs && prefs.interview) || {};
   state.config = {
     role: typeof c.role === 'string' ? c.role : '',
-    interviewType: ['technical', 'behavioral', 'general'].indexOf(c.interviewType) >= 0 ? c.interviewType : 'general',
+    interviewType: ['technical', 'behavioral', 'general', 'hr_screening', 'coding', 'system_design', 'case_study', 'culture_fit', 'final_executive'].indexOf(c.interviewType) >= 0 ? c.interviewType : 'general',
     difficulty: ['easy', 'medium', 'hard'].indexOf(c.difficulty) >= 0 ? c.difficulty : 'medium',
     duration: typeof c.duration === 'number' && c.duration > 0 ? c.duration : DEFAULT_DURATION_MINUTES,
     questions: typeof c.questions === 'number' && c.questions > 0 ? Math.floor(c.questions) : null,

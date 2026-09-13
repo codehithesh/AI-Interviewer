@@ -79,6 +79,12 @@ const SETTINGS_VIEW_HTML = `
               <option value="general">General</option>
               <option value="technical">Technical</option>
               <option value="behavioral">Behavioral</option>
+              <option value="hr_screening">HR Screening</option>
+              <option value="coding">Coding</option>
+              <option value="system_design">System Design</option>
+              <option value="case_study">Case Study</option>
+              <option value="culture_fit">Culture Fit</option>
+              <option value="final_executive">Final Executive</option>
             </select>
           </div>
           <div class="field">

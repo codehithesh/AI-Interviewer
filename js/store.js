@@ -33,7 +33,7 @@ const STORE = {
 
 const THEMES = ['system', 'light', 'dark'];
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
-const INTERVIEW_TYPES = ['technical', 'behavioral', 'general'];
+const INTERVIEW_TYPES = ['technical', 'behavioral', 'general', 'hr_screening', 'coding', 'system_design', 'case_study', 'culture_fit', 'final_executive'];
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 // A hand-edited or half-written entry must not take the other preferences down
