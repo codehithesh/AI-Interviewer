@@ -66,7 +66,7 @@ const SETTINGS_VIEW_HTML = `
            the next interview rather than the one in progress. -->
       <div class="settings-section">
         <h4 class="modal-label">Interview</h4>
-        <p class="hint">These shape the interviewer's brief. Leave anything blank and it simply is not mentioned — an unconfigured interview still works. Changes apply to the next interview you start.</p>
+        <p class="hint">These shape the interviewer's brief. Leave anything blank and it simply is not mentioned — an unconfigured interview still works. Changes apply to the next interview you start. Eg: Prompt can be about company and role-specific requirements, Entry Level 0-2 years, Mid Level 3-5 years, Senior Level 6+ years, etc.</p>
 
         <div class="field-grid">
           <div class="field">
